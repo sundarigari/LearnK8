@@ -1,0 +1,1 @@
+[centifaction cheatsheet](https://github.com/sundarigari/LearnK8/blob/master/certification.md)
