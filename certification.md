@@ -1,12 +1,12 @@
 # This exam curriculum includes these general domains and their weights on the exam:
 
-13% – Core Concepts  
-18% Configuration  
-10% Multi-Container Pods  
-18% – Observability  
-20% – Pod Design  
-13% – Services & Networking  
-8% – State Persistence  
+    13% – Core Concepts  
+    18% Configuration  
+    10% Multi-Container Pods  
+    18% – Observability  
+    20% – Pod Design  
+    13% – Services & Networking  
+    8% – State Persistence  
 
 
 # ReplicationController vs ReplicaSet
@@ -21,10 +21,12 @@
     kubectl get rs rsname -o yaml > rsname.yaml
 
 # edit replicasets
-    kubectl edit replicaset rsname # will extract and open yaml in vi. Edit and save to apply.  
-    # but the existing pods need to be deleted   
-    # or the rs itself needs to be deleteted and recreated  
-    # to have new pods with new changes
+    kubectl edit replicaset rsname 
+    
+will extract and open yaml in vi. Edit and save to apply.  
+but the existing pods need to be deleted   
+or the rs itself needs to be deleteted and recreated  
+to have new pods with new changes
 
 # delete replicasets
     kubectl delete replicaset rs-name  
@@ -43,31 +45,38 @@
     Can create pods, perform rolling updates and rollback if needed.  
 
 #namespaces
-    namespaces have 1) permission policies 2) quota such as max number od nodes/services/deployments etc.  
-    you can access resources across namespaces using fully qualified name such as : objectname.namespace-name.svc.cluster.local
-    first create Namespace object using  
-    createns.yaml  
-    ----  
+namespaces have 
+
+1) permission policies 2) quota such as max number od nodes/services/deployments etc.  
+
+you can access resources across namespaces using fully qualified name such as : objectname.namespace-name.svc.cluster.local
+first create Namespace object using  
+
+createns.yaml  
+ 
+
     apiversion: v1  
     kind: Namespace  
     metadata   
         name: dev  
 
-    or simply kubectl create namespace dev  
+or simply use
+    
+    kubectl create namespace dev  
 
 
-    two ways to specify namespace while creating an object such as pod  
-    1_ kubectl create -f zzz.yaml --namespace dev  
-    2_ or use metadata.namespace in the yaml to specify   
-    metadata  
-        name:   mypod  
-        namespace: dev  
+two ways to specify namespace while creating an object such as pod  
+1_ kubectl create -f zzz.yaml --namespace dev  
+2_ or use metadata.namespace in the yaml to specify   
+metadata  
+    name:   mypod  
+    namespace: dev  
 
-    how to set default namespace to dev?  
-    --------  
-        kubectl config  set-context $(kubectl config current-context) --namespace=dev  
+how to set default namespace to dev?  
+--------  
+    kubectl config  set-context $(kubectl config current-context) --namespace=dev  
 
-    ResourceQuota  
+ResourceQuota  
 
     apiversion: v1  
     kind: ResourceQuota  
@@ -166,8 +175,11 @@
                         key:  aAPP_COLOR  
 
 # Secrets
+    
     kubectl create secret generic mypassword --from-literal=REDIS_PASS=!@#$%^&GGHJ   
     kubectl create secret generic mypassword --from-file=mysecrets.properties    
+
+yaml
 
     apiVersion: v1  
     kind: Secret  
@@ -240,8 +252,6 @@ todo
 
 Kubernetes has 1)user account Ex: admin, developer etc  used by humans
 2)service account ex: Prometheus Jenkins used by application to interact with kubernetes api 
-
-
 
 kubectl create serviceccount dashboard-sa
 kubectl get serviceaccount
@@ -364,10 +374,12 @@ using nodeAffinity you can use complex logical operators such as In, NotIn Exist
 
 # multi container pods
 
-patterns:  
-Ambassador: A container that can switch between dev/test/prod dB's based the environment  
-Adaptor: A log agent container may need a log agent adapter container to convert the logs to a standard format  
-Sidecar: A Webserver container may need a log agent container  
+patterns:
+
+    Ambassador: A container that can switch between dev/test/prod dB's based the environment  
+    Adaptor: A log agent container may need a log agent adapter container to convert the logs to a standard format  
+    Sidecar: A Webserver container may need a log agent container  
+
 They share the same ntwork space (refer using localhost) and storage  
 
 Sharing volumes  
@@ -397,16 +409,17 @@ Sharing volumes
 
 # Readiness Probes
 Pod stages  
-Pending (untill a node is found)  
-ContainerCreating (pulls image and creates containers)  
-Running  
+
+    Pending (untill a node is found)  
+    ContainerCreating (pulls image and creates containers)  
+    Running  
 
 Pod Conditions are boolean variables (true or false). kubectl describe pod pod-name will show all the conditions with the true/flase values  
 
-PodScheduled  
-Initialized  
-ContainersReady  
-Ready  
+    PodScheduled  
+    Initialized  
+    ContainersReady  
+    Ready  
 
 Even when the pod Ready condition is true the web application or db application could still be not ready (warming up state)  
 
@@ -450,7 +463,6 @@ But sometimes the container may not crash but may not be accisible due to a bug 
     docker logs -f dockername  # shows the logs for the container
     kubectl logs -f podname dockername  # shows the logs for the container dockername in the pod: podname
 
-
 # Monitor resource consumption
 CPU, memory  
 Open Source: Prometeus, MetricsServer (HeapSter), ElasticStack   
@@ -462,6 +474,7 @@ Each node run a kubelet, which is responsible for receiving instructions from ku
 cAdvisor also runs on all nodes. responsible for aggregating the metrics of the node and sending to MetS  
 
     minikube addons enable metrics-server  
+
 to see the metrics. Only one metrics server per k8 cluster   
 
     kubectl top node  
@@ -476,7 +489,8 @@ labels are used to tag a kubernetes object. Labels are mentioned in the metadat
             function: Web-Server  
 
 to list all objects with a specific label use;  
-kubectl get pods --selector app=App1,tier=Middle-Tier,bu=Finance  # all three labels must match  
+    
+    kubectl get pods --selector app=App1,tier=Middle-Tier,bu=Finance  # all three labels must match  
 
 selector selects objects from template/metadata  
 
@@ -500,13 +514,14 @@ example
             spec:  
 
 # Rollout and Versioning in Deployments
-
 Revision1 is created when a new deployment is created  
 when the new image/spec applied then new Revision2 is pplied  
 
     kubectl rollout status deployment/depname   
+
 ## shows the status deployment depname successfully rolled out
     kubectl rollout history deployment/depname   
+
 ## shows the history of deployment depname
     deployment.extensions/redis  
     REVISION  CHANGE-CAUSE  
@@ -532,6 +547,7 @@ Rolling Update Strtegy: Deletes one pod and creates one new pod, then deletes an
     kubectl describe deployment/redis  
 
 Events:  
+
   Type    Reason             Age                 From                   Message  
   ----    ------             ----                ----                   -------  
   Normal  ScalingReplicaSet  11m                 deployment-controller  Scaled up replica set redis-77fbbd56c to 1  
@@ -550,6 +566,7 @@ Events:
     kubectl run ngnix --image nginx  
 
 Summarize commands:  
+
     Create: kubectl create -f dep.yaml  
     Get:    kubectl get deployments  
     update:       
@@ -598,7 +615,9 @@ cronjob definition (notice jobTemplate and total 3 specs)
         schedule: "*/1 * * * *"   
         jobTemplate:   
             spec:  
-                completions: 3  # pods are created sequentially. 2nd pod is created after 1st pod is finished. If a pod fails then it creates a new one   until it has 3 successful creations  
+                completions: 3  
+                # pods are created sequentially. 2nd pod is created after 1st pod is finished. 
+                # If a pod fails then it creates a new one   until it has 3 successful creations  
                 parallelism: 3  # run three parallel     
                 template:  
                     spec:  
@@ -608,13 +627,14 @@ cronjob definition (notice jobTemplate and total 3 specs)
                         command: ["expr","3", "+", "2"]  
                         restartPolicy: Never  
 
+schedule format
 
-### ┌───────────── minute (0 - 59)
-### │ ┌───────────── hour (0 - 23)
-### │ │ ┌───────────── day of the month (1 - 31)
-### │ │ │ ┌───────────── month (1 - 12)
-### │ │ │ │ ┌───────────── day of the week (0 - 6) (Sunday to Saturday;
-### │ │ │ │ │                                   7 is also Sunday on some systems)
-### │ │ │ │ │
-### │ │ │ │ │
-### * * * * * command to execute  
+     ┌───────────── minute (0 - 59)
+     │ ┌───────────── hour (0 - 23)
+     │ │ ┌───────────── day of the month (1 - 31)
+     │ │ │ ┌───────────── month (1 - 12)
+     │ │ │ │ ┌───────────── day of the week (0 - 6) (Sunday to Saturday;
+     │ │ │ │ │                                   7 is also Sunday on some systems)
+     │ │ │ │ │
+     │ │ │ │ │
+     * * * * * command to execute  
