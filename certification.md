@@ -548,17 +548,17 @@ Rolling Update Strtegy: Deletes one pod and creates one new pod, then deletes an
 
 Events:  
 
-  Type    Reason             Age                 From                   Message  
-  ----    ------             ----                ----                   -------  
-  Normal  ScalingReplicaSet  11m                 deployment-controller  Scaled up replica set redis-77fbbd56c to 1  
-  Normal  ScalingReplicaSet  11m                 deployment-controller  Scaled down replica set redis-785f9d6bfb to 0  
-  Normal  ScalingReplicaSet  9m12s               deployment-controller  Scaled up replica set redis-77fbbd56c to 2  
-  Normal  ScalingReplicaSet  8m31s               deployment-controller  Scaled up replica set redis-77fbbd56c to 3  
-  Normal  ScalingReplicaSet  92s                 deployment-controller  Scaled down replica set redis-77fbbd56c to 2  
-  Normal  ScalingReplicaSet  62s (x2 over 108s)  deployment-controller  Scaled up replica set redis-77fbbd56c to 5  
-  Normal  ScalingReplicaSet  62s                 deployment-controller  Scaled down replica set redis-77fbbd56c to 0  
-  Normal  ScalingReplicaSet  52s                 deployment-controller  Scaled up replica set redis-785f9d6bfb to 5  
-  Normal  ScalingReplicaSet  2s                  deployment-controller  Scaled up replica set redis-785f9d6bfb to 10  
+    Type    Reason             Age                 From                   Message  
+    ----    ------             ----                ----                   -------  
+    Normal  ScalingReplicaSet  11m                 deployment-controller  Scaled up replica set redis-77fbbd56c to 1  
+    Normal  ScalingReplicaSet  11m                 deployment-controller  Scaled down replica set redis-785f9d6bfb to 0  
+    Normal  ScalingReplicaSet  9m12s               deployment-controller  Scaled up replica set redis-77fbbd56c to 2  
+    Normal  ScalingReplicaSet  8m31s               deployment-controller  Scaled up replica set redis-77fbbd56c to 3  
+    Normal  ScalingReplicaSet  92s                 deployment-controller  Scaled down replica set redis-77fbbd56c to 2  
+    Normal  ScalingReplicaSet  62s (x2 over 108s)  deployment-controller  Scaled up replica set redis-77fbbd56c to 5  
+    Normal  ScalingReplicaSet  62s                 deployment-controller  Scaled down replica set redis-77fbbd56c to 0  
+    Normal  ScalingReplicaSet  52s                 deployment-controller  Scaled up replica set redis-785f9d6bfb to 5  
+    Normal  ScalingReplicaSet  2s                  deployment-controller  Scaled up replica set redis-785f9d6bfb to 10  
 
 ### Rollback  
     kubectl rollout undo deployment/redis  
@@ -567,15 +567,26 @@ Events:
 
 Summarize commands:  
 
-    Create: kubectl create -f dep.yaml  
-    Get:    kubectl get deployments  
-    update:       
-        kubectl apply -f dep.yaml  
-        kubectl set image  deployment/depname container-name=new-image  
-    Status:   
-        kubectl rollout status deployment/depname  
-        kubectl rollout history deployment/depname  
-    Rollback:   
+Create: 
+    
+    kubectl create -f dep.yaml  
+    
+Get:   
+
+    kubectl get deployments  
+    
+update:    
+
+    kubectl apply -f dep.yaml  
+    kubectl set image  deployment/depname container-name=new-image  
+    
+Status: 
+
+    kubectl rollout status deployment/depname  
+    kubectl rollout history deployment/depname  
+
+Rollback:   
+
         kubectl rollout undo  deployment/depname  
 
 # Jobs  
