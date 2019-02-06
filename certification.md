@@ -685,7 +685,7 @@ Services enable loose coupling between micro services in our application
 Types
 
 NodePort: A port on a pod is mapped to the nodeip same port so that the pod can be accessible at nodeip:podport
-![service nodeport](https://imgur.com/a/w1VVMt3)
+![service nodeport](https://imgur.com/488umts)
 
 ClusterIp The service creates a virtual ip inside the cluster
 
