@@ -589,6 +589,7 @@ job definition
 # cronjobs
 
 cronjob definition (notice jobTemplate and total 3 specs)  
+
     apiVersion: batch/v1beta1  
     kind: CronJob  
     metadata:  
