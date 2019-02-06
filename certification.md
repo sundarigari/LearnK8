@@ -11,13 +11,17 @@
 
 # ReplicationController and ReplicaSet
 Note: A Deployment that configures a ReplicaSet is now the recommended way to set up replication as opposed to using ReplicationController. A ReplicationController ensures that a specified number of pod replicas are running at any one time. In other words, a ReplicationController makes sure that a pod or a homogeneous set of pods is always up and available. ReplicaSet is apiVersion apps/v1. RS needs selector/matchLabels whereas for ReplicationController it's optional.  
+
 ## labels
-    labels are defined for pods. A service or controller can use selector/matchLabels section to filter by key=value to select pods to control.  
+labels are defined for pods. A service or controller can use selector/matchLabels section to filter by key=value to select pods to control.  
+
 ## create replicaset
     kubetl create -f rs-def.yaml
+
 ## get replicasets
     kubectl get rs  
     kubectl get rs rsname -o yaml > rsname.yaml
+
 ## edit replicasets
     kubectl edit replicaset rsname 
     
@@ -35,16 +39,20 @@ or the rs itself needs to be deleteted and recreated to have new pods with new c
     kubectl replace -f rsdef.yaml  
 
 # Deployments
+
     apiVesrion: apps/v1  
     kind: Deployment  
-    template: has pod spec  
+    template: # has pod spec  
+        spec:
+            containers:
+            - name:
 
-Deployment creates a replicaset  
+Deployment creates a replicaset.
 Can create pods, perform rolling updates and rollback if needed.  
 
-# namespaces
+# Namespaces
 namespaces have 1) permission policies 2) quota such as max number od nodes/services/deployments etc.  
-you can access resources across namespaces using fully qualified name such as : objectname.namespace-name.svc.cluster.local  
+You can access resources across namespaces using fully qualified name such as : objectname.namespace-name.svc.cluster.local  
 first create Namespace object using  
 
 create-ns.yaml  
@@ -60,8 +68,10 @@ or simply use
 
 
 two ways to specify namespace while creating an object such as pod  
-1) kubectl create -f zzz.yaml --namespace dev  
-2) or use metadata.namespace in the yaml to specify   
+    
+    kubectl create -f zzz.yaml --namespace dev  
+
+or use metadata.namespace in the yaml to specify   
 
     metadata  
         name:   mypod  
@@ -98,7 +108,7 @@ entry point
 
     ENTRYPOINT "sleep"  
     
-with entrypoint just just pass the parameters to the entrypoint (without mentioning the entrypoint itself) in the cmd  
+with entrypoint just pass the parameters to the entrypoint (without mentioning the entrypoint itself) in the cmd  
    
     docker run my-sleper-image 20  
     
@@ -130,6 +140,9 @@ how to override the entrypoint of docker from yaml in kubernetes?  use spec.cont
             -   name: ccc  
                 command: ["sleep2.0"]   
                 args: ["20"]  
+
+k8 command is smae as docker ENTRYPOINT
+k8 args is same as docker CMD
 
 ## env in container
     spec  
@@ -600,6 +613,8 @@ Rollback:
         kubectl rollout undo  deployment/depname  
 
 # Jobs  
+
+
     spec:  
         restartPolicy: Always  
 
@@ -623,6 +638,9 @@ job definition
                 image: ubuntu  
                 command: ["expr","3", "+", "2"]  
                 restartPolicy: Never  
+
+Pod Backoff failure policy
+There are situations where you want to fail a Job after some amount of retries due to a logical error in configuration etc. To do so, set .spec.backoffLimit to specify the number of retries before considering a Job as failed. The back-off limit is set by default to 6. Failed Pods associated with the Job are recreated by the Job controller with an exponential back-off delay (10s, 20s, 40s …) capped at six minutes. The back-off count is reset if no new failed Pods appear before the Job’s next status check.
 
 # cronjobs
 
@@ -659,3 +677,16 @@ schedule format
      │ │ │ │ │
      │ │ │ │ │
      * * * * * command to execute  
+
+# Services
+Services enable frontend pods to be accessible and available to the end user, back end pods to be available to front end pods etc.
+Services enable loose coupling between micro services in our application
+
+Types
+
+NodePort: A port on a pod is mapped to the nodeip same port so that the pod can be accessible at nodeip:podport
+![service nodeport](https://imgur.com/a/w1VVMt3)
+
+ClusterIp The service creates a virtual ip inside the cluster
+
+LoadBalancer: Balances load across multiple replicas of a pod
