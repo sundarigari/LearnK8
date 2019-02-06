@@ -9,52 +9,46 @@
     8% – State Persistence  
 
 
-# ReplicationController vs ReplicaSet
-    ReplicaSet is apiVersion apps/vi. RS needs selector/matchLabels whereas ReplicationController it's optional.  
-# labels
-    labels are defined for pods  
-    a service or controller can use selector/matchLabels section to filter by key=value to select pods to controll.  
-# create replicaset
+# ReplicationController and ReplicaSet
+Note: A Deployment that configures a ReplicaSet is now the recommended way to set up replication as opposed to using ReplicationController. A ReplicationController ensures that a specified number of pod replicas are running at any one time. In other words, a ReplicationController makes sure that a pod or a homogeneous set of pods is always up and available. ReplicaSet is apiVersion apps/v1. RS needs selector/matchLabels whereas for ReplicationController it's optional.  
+## labels
+    labels are defined for pods. A service or controller can use selector/matchLabels section to filter by key=value to select pods to control.  
+## create replicaset
     kubetl create -f rs-def.yaml
-# get replicasets
+## get replicasets
     kubectl get rs  
     kubectl get rs rsname -o yaml > rsname.yaml
-
-# edit replicasets
+## edit replicasets
     kubectl edit replicaset rsname 
     
-will extract and open yaml in vi. Edit and save to apply.  
-but the existing pods need to be deleted   
-or the rs itself needs to be deleteted and recreated  
-to have new pods with new changes
+will extract and open yaml in vi. Edit and save to apply.  Make sure the existing pods need to be deleted   
+or the rs itself needs to be deleteted and recreated to have new pods with new changes
 
-# delete replicasets
+## delete replicasets
     kubectl delete replicaset rs-name  
-# scale replicaset
+
+## scale replicaset
     kubectl scale --replicas=N rsdef.yaml  
     kubectl scale rs rs-name --replicas=N
-# update/replace replicaset
+
+## update/replace replicaset
     kubectl replace -f rsdef.yaml  
 
 # Deployments
-    use apiVesrion apps/v1  
-    use kind: Deployment  
-    template has pod template  
-    Deployment creates a replicaset  
- 
-    Can create pods, perform rolling updates and rollback if needed.  
+    apiVesrion: apps/v1  
+    kind: Deployment  
+    template: has pod spec  
 
-#namespaces
-namespaces have 
+Deployment creates a replicaset  
+Can create pods, perform rolling updates and rollback if needed.  
 
-1) permission policies 2) quota such as max number od nodes/services/deployments etc.  
-
-you can access resources across namespaces using fully qualified name such as : objectname.namespace-name.svc.cluster.local
+# namespaces
+namespaces have 1) permission policies 2) quota such as max number od nodes/services/deployments etc.  
+you can access resources across namespaces using fully qualified name such as : objectname.namespace-name.svc.cluster.local  
 first create Namespace object using  
 
-createns.yaml  
+create-ns.yaml  
  
-
     apiversion: v1  
     kind: Namespace  
     metadata   
@@ -66,14 +60,15 @@ or simply use
 
 
 two ways to specify namespace while creating an object such as pod  
-1_ kubectl create -f zzz.yaml --namespace dev  
-2_ or use metadata.namespace in the yaml to specify   
-metadata  
-    name:   mypod  
-    namespace: dev  
+1) kubectl create -f zzz.yaml --namespace dev  
+2) or use metadata.namespace in the yaml to specify   
+
+    metadata  
+        name:   mypod  
+        namespace: dev  
 
 how to set default namespace to dev?  
---------  
+ 
     kubectl config  set-context $(kubectl config current-context) --namespace=dev  
 
 ResourceQuota  
@@ -92,40 +87,51 @@ ResourceQuota
             limits.memory: 5Gi  
 
 # Docker commands
-    containers are meant to run a task to completion and exit  
-    Once the task is completed the container exits  
-    the cmd statement in the dockerfile specifys what command to run to completion  
+
+containers are meant to run a task to completion and exit.  
+Once the task is completed the container exits  
+the cmd statement in the dockerfile specifys what command to run to completion  
+
     CMD "ngnix"  
 
-    entry point  
+entry point   
+
     ENTRYPOINT "sleep"  
-    with entrypoint just just pass the parameters to the entrypoint (without mentioning the entrypoint itself) in the cmd  
+    
+with entrypoint just just pass the parameters to the entrypoint (without mentioning the entrypoint itself) in the cmd  
+   
     docker run my-sleper-image 20  
-    ENTRYPOINT is always prepended to CMD  
+    
+ENTRYPOINT is always prepended to CMD  
 
     FROM ubuntu  
     ENTRYPOINT ["sleep"]  
     CMD ["20"]  
 
-    you can simple run using dockr run my-image  
-    you can override the entrypoint using   
+you can simply run using 
+
+    dockr run my-image  
+
+you can override the entrypoint using   
+
     docker run --entrypoint sleep2.0  
 
-    how to pass command arguments from yaml in kubernetes?  
-    use spec.containers.args: ["arg1", "arg2"]  
+how to pass command arguments from yaml in kubernetes?  use spec.containers.args: ["arg1", "arg2"]  
+
     spec  
         containers  
             -   name: ccc  
                 args: ["20"]  
 
-    how to override the entrypoint of docker from yaml in kubernetes?  
-    use spec.containers.command: ["sleep"]  
+how to override the entrypoint of docker from yaml in kubernetes?  use spec.containers.command: ["sleep"]  
+
     spec  
         containers  
             -   name: ccc  
                 command: ["sleep2.0"]   
                 args: ["20"]  
-# env in container
+
+## env in container
     spec  
         containers  
         -   name  
@@ -136,6 +142,8 @@ ResourceQuota
                     value: val2  
             
 # ConfigMaps
+ConfigMaps allow you to decouple configuration artifacts from image content to keep containerized applications portable.
+
     kubectl create configmap mycmp --form-literal=key1=val1 --from-literal=key2=val2  
     kubectl create -f mycmp.yaml  
 
@@ -153,6 +161,8 @@ ResourceQuota
 ## inject configmap data into pod
     use spec.containers.envFrom.configmapRef.name=nameofthe-config-map  
     use spec.containers.envFrom.configmapRef.key=nameofthe-key  
+
+
 ### to inject the entire configmap into a container spec
     spec  
         containers  
