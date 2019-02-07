@@ -12,13 +12,42 @@
 
 
 # ReplicationController and ReplicaSet
+A ReplicaSet ensures that a specified number of pod replicas are running at any given time. However, a Deployment is a higher-level concept that manages ReplicaSets and provides declarative updates to Pods along with a lot of other useful features. Therefore, we recommend using Deployments instead of directly using ReplicaSets, unless you require custom update orchestration or don’t require updates at all.
+
+This actually means that you may never need to manipulate ReplicaSet objects: use a Deployment instead, and define your application in the spec section.
+
+Example
+frontend.yaml 
+
+    apiVersion: apps/v1
+    kind: ReplicaSet
+    metadata:
+    name: frontend
+    labels:
+        app: guestbook
+        tier: frontend
+    spec:
+    # modify replicas according to your case
+    replicas: 3
+    selector:
+        matchLabels:
+        tier: frontend
+    template:
+        metadata:
+        labels:
+            tier: frontend
+        spec:
+        containers:
+        - name: php-redis
+            image: gcr.io/google_samples/gb-frontend:v3
+            
 Note: A Deployment that configures a ReplicaSet is now the recommended way to set up replication as opposed to using ReplicationController. A ReplicationController ensures that a specified number of pod replicas are running at any one time. In other words, a ReplicationController makes sure that a pod or a homogeneous set of pods is always up and available. ReplicaSet is apiVersion apps/v1. RS needs selector/matchLabels whereas for ReplicationController it's optional.  
 
 ## labels
-labels are defined for pods. A service or controller can use selector/matchLabels section to filter by key=value to select pods to control.  
+labels are defined for k8 objects such as pods. A service or controller can use selector/matchLabels section to filter by key=value to select pods to control.  
 
 ## create replicaset
-    kubetl create -f rs-def.yaml
+    kubectl create -f rs-def.yaml
 
 ## get replicasets
     kubectl get rs  
@@ -686,7 +715,7 @@ There are three types of services.
 
 ## NodePort: 
 A port on a pod is mapped to the nodeip same port so that the pod can be accessible at nodeip:nodePort
-![service nodeport](https://imgur.com/488umts)  
+[service nodeport](https://imgur.com/488umts.jpg)  
 
 Node (nodeip, nodePort) <-> Service (ip Port) <-> Pod (ip, TargetPort)
 nodeip: Is the ip address of any node. If you have multiple nodes, you can use any one node's ip and it will work
@@ -760,4 +789,11 @@ is running at port 443 but targetport is 6433
     Events:            <none>
 
 ## LoadBalancer
-Balances load across multiple replicas of a pod
+Balances load across multiple replicas of a pod. Assigns a public ip and a port
+
+# Ingress controllers
+GCP HTTP(S) Load balancer for GCE
+ngnix
+
+[ingress](https://i.imgur.com/uCgjqmJ.jpg)
+
