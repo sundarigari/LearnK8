@@ -792,8 +792,111 @@ is running at port 443 but targetport is 6433
 Balances load across multiple replicas of a pod. Assigns a public ip and a port
 
 # Ingress controllers
-GCP HTTP(S) Load balancer for GCE
-ngnix
 
-[ingress](https://i.imgur.com/uCgjqmJ.jpg)
+Kubernetes cluster does not come with a builtin ingress controller by default. We must deploy a third party ingress controller manually. Choose between one of below solutions as a ingress controller
+1) GCP HTTP(S) Load balancer for GCE
+2) ngnix
+are supported and maintained by kubernetes project
 
+
+(Others such as istio, haproxy, contour, traegik)
+
+
+ngnix ingress controller is deployed like any other k8 resurce in the cluster
+
+We create a deployment below:
+
+    apiVersion: extensions/v1beta1
+    kind: Deployment
+    metadata:
+        name: nginx-ingress-controller
+    spec:
+        replicas: 1
+        selector:
+            matchLabels:
+                name: nginx-ingress
+        template:
+            metadata:
+                name: nginx-ingress
+            spec:
+                containers:
+                    -   name: nginx-ingress-controller
+                        image: quay.io/kubernetes-ingress-controller/nginx-ingress-controller:0.21.0
+                args:
+                    -   /nginx-ingress-controller
+                    - --configmap=$(POD_NAMESPACE)/nginx-configuration
+                    # need to create a new k8 object of kind ConfigMap with name=nginx-configuration and store all config data
+                env:
+                    -   name: POD_NAME
+                        valueFrom:
+                            fieldRef:
+                                fieldPath: metadata.name
+                    -   name: POD_NAMESPACE
+                        valueFrom:
+                            fieldRef:
+                                fieldPath: metadata.namespace
+                ports:
+                -   name: http
+                    containerPort: 80
+                -   name: https
+                    containerPort: 443
+
+create a Service using below yaml
+
+    apiVersion: v1
+    kind: Service
+    metadata:
+        name: nginx-ingress
+    spec:
+        type: NodePort
+        ports:
+        -   port: 80
+            targetport: 80
+            name: http
+            protocol: TCP
+        -   port: 443
+            targetport: 443
+            name: https
+            protocol: TCP
+        selector:
+            matchLabels:
+                name: nginx-ingress
+
+create ServiceAccount and ConfigMap as well
+
+![ingress](https://i.imgur.com/uCgjqmJ.jpg)
+
+## Ingress resource
+Ingress Resources: Are created using yaml definition files of kind:Ingress
+
+ingress-wear.yaml
+
+    apiVersion: extensions/v1beta
+    kind: Ingress
+    metadata:
+        name: Ingress-wear
+    spec:
+        backend:
+            serviceName: wear-service
+            servicePort: 80
+
+create ingress resource
+
+    kubectl create -f ingress-wear.yaml
+
+    apiVersion: extensions/v1beta
+    kind: Ingress
+    metadata:
+        name: Ingress-wear
+    rules:
+        - host: www.mystore.com
+          http:
+            paths:
+            -   backend:
+                serviceName: wear-service
+                servicePort: 80
+                
+        - host: videos.mystore.com
+          http:
+    
+        
