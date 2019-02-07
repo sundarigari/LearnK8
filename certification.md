@@ -684,9 +684,80 @@ Services enable loose coupling between micro services in our application
 
 Types
 
-NodePort: A port on a pod is mapped to the nodeip same port so that the pod can be accessible at nodeip:podport
+## NodePort: 
+A port on a pod is mapped to the nodeip same port so that the pod can be accessible at nodeip:nodePort
 ![service nodeport](https://imgur.com/488umts)  
 
-ClusterIp The service creates a virtual ip inside the cluster
+Node (nodeip, nodePort) <-> Service (ip Port) <-> Pod (ip, TargetPort)
+nodeip: Is the ip address of any node. If you have multiple nodes, you can use any one node's ip and it will work
 
-LoadBalancer: Balances load across multiple replicas of a pod
+sample service.yaml file
+
+    apiVersion: v1
+    kind: Service
+    metadata:
+        name: WebServer
+    spec:
+        type: NodePort
+        port:
+            - targetport: 80
+                port: 80  # this will be use if you don't specify nodePort
+                nodeport: 30008  # range 30000 to 32767
+        selector:
+            app: WebApp
+            type: FrintEnd  # both these need to match the metadata of the pods.
+
+If multiple pods match the selector, then the service will loadbalance and send the requests to any one of the group of matched pods randomly. These pods can be anywhere in the cluster across many pods.
+Service uses the below rules to balance load:
+
+Algorithm: Random
+SessionAffinity: True
+
+Use the following command to create the service
+
+    kubectl create -f service.yaml
+
+Use the following command to get the service
+
+    kubectl get services
+
+## ClusterIp 
+The service creates a virtual ip inside the cluster
+
+ apiVersion: v1
+    kind: Service
+    metadata:
+        name: Backend
+    spec:
+        type: ClusterIP # default is also clusterIP so no need to specify this line
+        port:
+            - targetport: 8080
+              port: 80  # this will be use if you don't specify nodePort
+                
+        selector:
+            app: WebApp
+            type: FrintEnd  # both these need to match the metadata of the pods.
+This type of service is accesible to other pods either using clusterip of kubernetes at port or simply the service name 'Backend' at port
+
+the below command shows that the main kubernetes service 
+
+    kubectl describe service kubernetes
+
+is running at port 443 but targetport is 6433
+
+    Name:              kubernetes
+    Namespace:         default
+    Labels:            component=apiserver
+                    provider=kubernetes
+    Annotations:       <none>
+    Selector:          <none>
+    Type:              ClusterIP
+    IP:                10.96.0.1
+    Port:              https  443/TCP
+    TargetPort:        6443/TCP
+    Endpoints:         172.17.0.48:6443
+    Session Affinity:  None
+    Events:            <none>
+
+## LoadBalancer
+Balances load across multiple replicas of a pod
