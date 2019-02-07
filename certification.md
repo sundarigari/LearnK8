@@ -715,7 +715,7 @@ There are three types of services.
 
 ## NodePort: 
 A port on a pod is mapped to the nodeip same port so that the pod can be accessible at nodeip:nodePort
-[service nodeport](https://imgur.com/488umts.jpg)  
+![service nodeport](https://imgur.com/488umts.jpg)  
 
 Node (nodeip, nodePort) <-> Service (ip Port) <-> Pod (ip, TargetPort)
 nodeip: Is the ip address of any node. If you have multiple nodes, you can use any one node's ip and it will work
