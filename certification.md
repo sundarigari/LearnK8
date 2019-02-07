@@ -679,10 +679,8 @@ schedule format
      * * * * * command to execute  
 
 # Services
-Services enable frontend pods to be accessible and available to the end user, back end pods to be available to front end pods etc.
-Services enable loose coupling between micro services in our application
-
-Types
+Services enable a group of pods (with same label) to be accessible as a group and be load balanced and available to another pod or end user. Example: back end pods to be available to front end pods front end pods to be accessible to end users etc. Services enable loose coupling between micro services in our application.
+There are three types of services.
 
 ## NodePort: 
 A port on a pod is mapped to the nodeip same port so that the pod can be accessible at nodeip:nodePort
@@ -721,7 +719,7 @@ Use the following command to get the service
 
     kubectl get services
 
-## ClusterIp 
+## ClusterIP
 The service creates a virtual ip inside the cluster
 
  apiVersion: v1
