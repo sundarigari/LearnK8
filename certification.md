@@ -1,14 +1,14 @@
 # This exam curriculum includes these general domains and their weights on the exam:
 
-    | Weight| Topic                   |
-    |-------|-------------------------|
-    | 13%   | Core Concepts           |
-    | 18%   | Configuration           |
-    | 10%   | Multi-Container Pods    |
-    | 18%   |  Observability          |
-    | 20%   |  Pod Design             |
-    | 13%   |  Services & Networking  |
-    | 8%    |  State Persistence      |
+| Weight| Topic                   |
+|-------|-------------------------|
+| 13%   | Core Concepts           |
+| 18%   | Configuration           |
+| 10%   | Multi-Container Pods    |
+| 18%   |  Observability          |
+| 20%   |  Pod Design             |
+| 13%   |  Services & Networking  |
+| 8%    |  State Persistence      |
 
 
 # ReplicationController and ReplicaSet
