@@ -983,3 +983,58 @@ Few more examples of Ingress:
 to see the contents of the Ingress-My-Store ingress, run the describe cmd:
 
     kubectl describe ingress Ingress-My-Store
+
+# Network Policies
+A network policy is a specification of how groups of pods are allowed to communicate with each other and other network endpoints.  
+NetworkPolicy resources use labels to select pods and define rules which specify what traffic is allowed to the selected pods.  
+
+## Isolated and Non-isolated Pods
+By default, pods are non-isolated; they accept traffic from any source.
+Pods become isolated by having a NetworkPolicy that selects them. Once there is any NetworkPolicy in a namespace selecting a particular pod, that pod will reject any connections that are not allowed by any NetworkPolicy. (Other pods in the namespace that are not selected by any NetworkPolicy will continue to accept all traffic.)
+
+The NetworkPolicy Resource
+See the NetworkPolicy for a full definition of the resource.
+
+An example NetworkPolicy might look like this:
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: test-network-policy
+  namespace: default
+spec:
+  podSelector:
+    matchLabels:
+      role: db
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - ipBlock:
+        cidr: 172.17.0.0/16
+        except:
+        - 172.17.1.0/24
+    - namespaceSelector:
+        matchLabels:
+          project: myproject
+    - podSelector:
+        matchLabels:
+          role: frontend
+    ports:
+    - protocol: TCP
+      port: 6379
+  egress:
+  - to:
+    - ipBlock:
+        cidr: 10.0.0.0/24
+    ports:
+    - protocol: TCP
+      port: 5978
+
+# Volumes
+
+Volume can be used to persist the pod's data on a folder inside the node (using hostPath.path: /data, hostPath.type: Directory). Even if the pod is deleted the volume will not be deleted.
+hostPath type of volumes create the volumes pointing to a directory on the node so it will work good on a single node cluster.
+On a multi node cluster, the pod will use /data of the node its residing on.
+
