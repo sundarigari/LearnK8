@@ -713,6 +713,11 @@ schedule format
 Services enable a group of pods (with same label) to be accessible as a group and be load balanced and available to another pod or end user. Example: back end pods to be available to front end pods front end pods to be accessible to end users etc. Services enable loose coupling between micro services in our application.
 There are three types of services.
 
+Create a service yaml template using --dry-run and expose your deployment using:
+
+    kubectl expose deployment -n name-space deployment-name --type=NodePort --port=80 --name=service-name --dry-run -o yaml >myservice.yaml
+
+
 ## NodePort: 
 A port on a pod is mapped to the nodeip same port so that the pod can be accessible at nodeip:nodePort
 ![service nodeport](https://imgur.com/488umts.jpg)  
@@ -806,14 +811,30 @@ Kubernetes cluster does not come with a builtin ingress controller by default. W
 1) GCP HTTP(S) Load balancer for GCE
 2) ngnix
 are supported and maintained by kubernetes project
-
-
 (Others such as istio, haproxy, contour, traegik)
 
+Create all the a separate namespace such as ingress-space for all the below objects. (kubectl create namespace ingress-space)
+ngnix ingress controller is deployed like any other k8 resurce in the cluster. It consists of:
 
-ngnix ingress controller is deployed like any other k8 resurce in the cluster
+* ConfigMap (kubectl create configmap nginx-configuration --namespace ingress-space)
+* ServiceAccount (kubectl create serviceaccount ingress-serviceaccount --namespace ingress-space)
+* Role (apiVersion: rbac.authorization.k8s.io/v1 kind: Role)
+* RoleBinding (bind the above role with above service account)
+* Deployment (kubectl create -f deploy.yaml --namespace ingress-space)
+* Service (kubectl expose deployment -n ingress-space nginx-ingress-controller --type=NodePort --port=80 --name=nginx-ingress-service --dry-run -o yaml >service.yaml
+            kubectl create -f service.yaml --namespace ingress-space)
 
-We create a deployment below:
+    roleRef:
+        apiGroup: rbac.authorization.k8s.io
+        kind: Role
+        name: ingress-role
+    subjects:
+        - kind: ServiceAccount
+        name: ingress-serviceaccount
+
+
+
+We create the deployment in namespace ingress-space using below deploy.yaml:
 
     apiVersion: extensions/v1beta1
     kind: Deployment
@@ -823,7 +844,7 @@ We create a deployment below:
         replicas: 1
         selector:
             matchLabels:
-                name: nginx-ingress
+                name: nginx-ingress # match this to template.metadata.name below
         template:
             metadata:
                 name: nginx-ingress
@@ -833,8 +854,8 @@ We create a deployment below:
                         image: quay.io/kubernetes-ingress-controller/nginx-ingress-controller:0.21.0
                 args:
                     -   /nginx-ingress-controller
-                    - --configmap=$(POD_NAMESPACE)/nginx-configuration
-                    # need to create a new k8 object of kind ConfigMap with name=nginx-configuration and store all config data
+                    - --configmap=$(POD_NAMESPACE)/nginx-configuration  # POD_NAMESPACE will be ingress-space
+                    # need to create a new ConfigMap with name=nginx-configuration and store all config data
                 env:
                     -   name: POD_NAME
                         valueFrom:
@@ -850,14 +871,15 @@ We create a deployment below:
                 -   name: https
                     containerPort: 443
 
-create a Service using below yaml
+create a Service using below service.yaml
 
     apiVersion: v1
     kind: Service
     metadata:
-        name: nginx-ingress
+        name: nginx-ingress-service
+        namespace: ingress-space
     spec:
-        type: NodePort
+        type: NodePort  # or LoadBalancer
         ports:
         -   port: 80
             targetport: 80
@@ -869,7 +891,8 @@ create a Service using below yaml
             protocol: TCP
         selector:
             matchLabels:
-                name: nginx-ingress
+                name: nginx-ingress  # must match the template.metadata.name of the deployment above
+
 
 create ServiceAccount and ConfigMap as well
 
@@ -885,7 +908,8 @@ kubectl get all --all-namespaces
 kubectl get ingress --all-namespaces
 kubectl describe ingress --namespace app-space
 
-Ingress Resources is created using yaml definition files of kind:Ingress
+Ingress Resources is created using yaml definition files of kind:Ingress 
+Create in the app-space namespace where all the apps (deployments,replicasets, pods) and their corresponding services are running
 
 ingress-wear.yaml
 
@@ -902,34 +926,59 @@ create ingress resource
 
     kubectl create -f ingress-wear.yaml
 
+Few more examples of Ingress:
+    ----
     apiVersion: extensions/v1beta
     kind: Ingress
     metadata:
         name: Ingress-My-Store
-    rules:  # multiple backends since spec contains rules and each rule has different host, path and backend
-        - host: www.mystore.com # if only one rule , you can ignore host field. Then traffic to any host will come here
-          http:
+    spec:
+        rules:  # multiple backends since spec contains rules and each rule has different host, path and backend
+            - host: www.mystore.com # if only one rule , you can ignore host field. Then traffic to any host will come here
+            http:
+                paths:
+                -   path: shoes
+                    backend:
+                        serviceName: shoes-service
+                        servicePort: 80
+                -  path: clothes
+                    backend:
+                        serviceName: clothes-service
+                        servicePort: 80
+                    
+            - host: videos.mystore.com
+            http:
+                paths:
+                -   path: shoes-vid
+                    backend:
+                        serviceName: shoes-vid-service
+                        servicePort: 80
+                -  path: clothes-vid
+                    backend:
+                        serviceName: clothes-vid-service
+                        servicePort: 80
+    ---
+    apiVersion: extensions/v1beta1
+    kind: Ingress
+    metadata:
+        name: ingress-wear-watch
+        namespace: app-space
+    annotations:
+        nginx.ingress.kubernetes.io/rewrite-target: /
+        nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    spec:
+        rules:
+        - http:
             paths:
-            -   path: shoes
+            - path: /wear
                 backend:
-                    serviceName: shoes-service
-                    servicePort: 80
-             -  path: clothes
+                serviceName: wear-service
+                servicePort: 8080
+            - path: /watch
                 backend:
-                    serviceName: clothes-service
-                    servicePort: 80
-                
-        - host: videos.mystore.com
-          http:
-            paths:
-            -   path: shoes-vid
-                backend:
-                    serviceName: shoes-vid-service
-                    servicePort: 80
-             -  path: clothes-vid
-                backend:
-                    serviceName: clothes-vid-service
-                    servicePort: 80
+                serviceName: video-service
+                servicePort: 8080
+
                 
 to see the contents of the Ingress-My-Store ingress, run the describe cmd:
 
