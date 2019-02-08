@@ -791,7 +791,16 @@ is running at port 443 but targetport is 6433
 ## LoadBalancer
 Balances load across multiple replicas of a pod. Assigns a public ip and a port
 
-# Ingress controllers
+# Ingress 
+Ingress, added in Kubernetes v1.1, exposes HTTP and HTTPS routes from outside the cluster to services within the cluster. Traffic routing is controlled by rules defined on the ingress resource.
+
+   internet  
+----|-----    
+   [ Ingress ]  
+   --|-----|--  
+   [ Services ] 
+
+## Ingress controllers
 
 Kubernetes cluster does not come with a builtin ingress controller by default. We must deploy a third party ingress controller manually. Choose between one of below solutions as a ingress controller
 1) GCP HTTP(S) Load balancer for GCE
@@ -867,7 +876,16 @@ create ServiceAccount and ConfigMap as well
 ![ingress](https://i.imgur.com/uCgjqmJ.jpg)
 
 ## Ingress resource
-Ingress Resources: Are created using yaml definition files of kind:Ingress
+Ingress resource is a set of rules and configurtions.
+You can specify rules such as all traffic goes to service
+or all traffic to url /path1 goes to service1 and /path2 to go to service2
+or all traffic to url company.com to go to service1 and videos.company.com sub domain to go to service2 etc
+
+kubectl get all --all-namespaces
+kubectl get ingress --all-namespaces
+kubectl describe ingress --namespace app-space
+
+Ingress Resources is created using yaml definition files of kind:Ingress
 
 ingress-wear.yaml
 
@@ -876,7 +894,7 @@ ingress-wear.yaml
     metadata:
         name: Ingress-wear
     spec:
-        backend:
+        backend:  # single backend since spec contains backend
             serviceName: wear-service
             servicePort: 80
 
@@ -887,16 +905,32 @@ create ingress resource
     apiVersion: extensions/v1beta
     kind: Ingress
     metadata:
-        name: Ingress-wear
-    rules:
-        - host: www.mystore.com
+        name: Ingress-My-Store
+    rules:  # multiple backends since spec contains rules and each rule has different host, path and backend
+        - host: www.mystore.com # if only one rule , you can ignore host field. Then traffic to any host will come here
           http:
             paths:
-            -   backend:
-                serviceName: wear-service
-                servicePort: 80
+            -   path: shoes
+                backend:
+                    serviceName: shoes-service
+                    servicePort: 80
+             -  path: clothes
+                backend:
+                    serviceName: clothes-service
+                    servicePort: 80
                 
         - host: videos.mystore.com
           http:
-    
-        
+            paths:
+            -   path: shoes-vid
+                backend:
+                    serviceName: shoes-vid-service
+                    servicePort: 80
+             -  path: clothes-vid
+                backend:
+                    serviceName: clothes-vid-service
+                    servicePort: 80
+                
+to see the contents of the Ingress-My-Store ingress, run the describe cmd:
+
+    kubectl describe ingress Ingress-My-Store
