@@ -243,7 +243,7 @@ yaml
         REDIS_PASS: base64-encoded-pass  
         REDIS_HOST: base64-encoded-hostname  
 
-    echo -n mypasword | base64  
+    echo -n redis123 | base64  
     bXlwYXN3b3Jk  
     echo -n bXlwYXN3b3Jk | base64  --decode  
     mypassword  
@@ -1038,3 +1038,77 @@ Volume can be used to persist the pod's data on a folder inside the node (using 
 hostPath type of volumes create the volumes pointing to a directory on the node so it will work good on a single node cluster.
 On a multi node cluster, the pod will use /data of the node its residing on.
 
+    apiVersion: v1
+    kind: Pod
+    metadata:
+    name: configmap-pod
+    spec:
+    containers:
+        - name: test
+        image: busybox
+        volumeMounts:
+            - name: config-vol
+            mountPath: /etc/config
+    volumes:
+        - name: config-vol
+        configMap:
+            name: log-config
+            items:
+            - key: log_level
+                path: log_level
+                
+# Persistent Volume
+
+    apiVersion: v1
+    kind: PersistentVolume
+    metadata:
+        name: pv-vol1
+    spec:
+        accessModes: 
+        - ReadWriteMany
+        capacity:
+            storage: 100Mi
+        hostPath:
+            path: /temp/data
+
+        kubectl get persistentvolume
+
+## Persistent Voume Claim
+pvc can use matchLabels to match multiple PVs
+calim one-to-one volume
+
+    apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+        name: claim-log-1
+    spec:
+        accessModes: 
+        - ReadWriteMany
+        resources:
+            requests:
+                storage: 100Mi
+
+
+        kubectl get persistentvolume
+## use persistent vaolume clain inside pod
+
+kind: Deployment
+spec:
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      volumes:
+      - name: mysql-persistent-storage      <----|
+        persistentVolumeClaim:                   |
+          claimName: claim-log-1                 |
+      containers:                                |
+      - name: mysqlcontainer                     |
+        image: mysql:5.7                         |
+        volumeMounts:                            |
+        - mountPath: "/var/lib/mysql"            |
+          name: mysql-persistent-storage <-------|
