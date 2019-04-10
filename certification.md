@@ -1,3 +1,4 @@
+# Curriculum
 This exam curriculum includes these general domains and their weights on the exam:
 
 | Weight| Topic                   |
@@ -23,14 +24,12 @@ updates to Pods along with a lot of other useful features. Therefore, we recomme
 Deployments instead of directly using ReplicaSets, unless you require custom update 
 orchestration or don’t require updates at all.
 
-This actually means that you may never need to manipulate ReplicaSet objects: 
-use a Deployment instead, and define your application in the spec section.
+This actually means that you may never need to manipulate ReplicaSet objects. Use a Deployment instead, and define your 
+application in the spec section.
 
-### Selector is the main difference between RC and RS/Depl
+### Selector is the main difference between RC, RS and Deployment
 RC does not need spec.selector.matchLabels. RC just needs a template inside the spec
-RS and Deployment needs to select the pods from the template using a spec.selector.matchLabels manifestation
-
-
+RS and Deployment needs to select the pods from the template using a spec.selector.matchLabels manifestation  
 Example replicaset using frontend.yaml 
 
     apiVersion: apps/v1
@@ -55,16 +54,15 @@ Example replicaset using frontend.yaml
               - name: php-redis
                 image: gcr.io/google_samples/gb-frontend:v3
             
-Note: A Deployment that configures a ReplicaSet is now the recommended way to set up 
-replication as opposed to using ReplicationController. A ReplicationController ensures 
-that a specified number of pod replicas are running at any one time. In other words, 
-a ReplicationController makes sure that a pod or a homogeneous set of pods is always up 
-and available. ReplicaSet is apiVersion apps/v1. RS needs selector/matchLabels whereas 
-for ReplicationController it's optional.  
+Note: A Deployment that configures a ReplicaSet is now the recommended way to set up replication as opposed to using 
+ReplicationController. A ReplicationController ensures that a specified number of pod replicas are running at any one
+time. In other words, a ReplicationController makes sure that a pod or a homogeneous set of pods is always up and 
+available. ReplicaSet is apiVersion apps/v1. RS needs selector/matchLabels whereas for ReplicationController it's 
+optional.  
 
 ### labels
-labels are defined for k8 objects such as pods. A service or controller can use 
-selector/matchLabels section to filter by key=value to select pods to control.  
+labels are defined for k8 objects such as pods. A service or controller can use selector/matchLabels section to filter 
+by key=value to select pods to control.  
 
 ### create replicaset
     kubectl create -f rs.yaml
@@ -76,8 +74,8 @@ selector/matchLabels section to filter by key=value to select pods to control.
 ### edit replicasets
     kubectl edit replicaset rsname 
     
-will extract and open yaml in vi. Edit and save to apply.  Make sure the existing pods need to be deleted   
-or the rs itself needs to be deleteted and recreated to have new pods with new changes
+will extract and open yaml in vi. Edit and save to apply.  Make sure the existing pods need to be deleted or the rs 
+itself needs to be deleteted and recreated to have new pods with new changes
 
 ### delete replicasets
     kubectl delete replicaset rs-name  
@@ -101,10 +99,11 @@ Deployments are
 Deployment creates a replicaset. Creates pods, perform rolling updates and rollback if needed.  
 
 ## Namespaces
-namespaces have 1) permission policies 2) quota such as max number of nodes/services/deployments etc.  
-You can access resources across namespaces using fully qualified name such as : objectname.namespace-name.svc.cluster.local  
-You can separate Dev and Prod using two namespaces.
-first create Namespace object using  yaml.
+namespaces have 1) permission policies 2) quota such as max number of nodes/services/deployments etc. You can access 
+resources across namespaces using fully qualified name such as : objectname.namespace-name.svc.cluster.local  
+You can separate Dev and Prod using two namespaces. 
+
+First create Namespace object using  yaml.
 
 create-ns.yaml  
  
@@ -116,7 +115,6 @@ create-ns.yaml
 or simply use
     
     kubectl create namespace dev  
-
 
 two ways to specify namespace while creating an object such as pod  
     
