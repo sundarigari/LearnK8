@@ -1298,23 +1298,23 @@ calim one-to-one volume
         kubectl get persistentvolume
 ## use persistent volume claim inside pod
 
-kind: Deployment
-spec:
-  selector:
-    matchLabels:
-      app: mysql
-  template:
-    metadata:
-      labels:
-        app: mysql
+    kind: Deployment
     spec:
-      volumes:
-      - name: mysql-persistent-storage      <----|
-        persistentVolumeClaim:                   |
-          claimName: claim-log-1                 |
-      containers:                                |
-      - name: mysqlcontainer                     |
-        image: mysql:5.7                         |
-        volumeMounts:                            |
-        - mountPath: "/var/lib/mysql"            |
-          name: mysql-persistent-storage <-------|
+      selector:
+        matchLabels:
+          app: mysql
+      template:
+        metadata:
+          labels:
+            app: mysql
+        spec:
+          volumes:
+          - name: mysql-persistent-storage      <----|
+            persistentVolumeClaim:                   |
+              claimName: claim-log-1                 |
+          containers:                                |
+          - name: mysqlcontainer                     |
+            image: mysql:5.7                         |
+            volumeMounts:                            |
+            - mountPath: "/var/lib/mysql"            |
+              name: mysql-persistent-storage <-------|
