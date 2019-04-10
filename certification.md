@@ -1,4 +1,4 @@
-# This exam curriculum includes these general domains and their weights on the exam:
+This exam curriculum includes these general domains and their weights on the exam:
 
 | Weight| Topic                   |
 |-------|-------------------------|
