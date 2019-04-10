@@ -10,11 +10,13 @@
 | 13%   |  Services & Networking  |
 | 8%    |  State Persistence      |
 
-# Create aliases and completions
+# Core concepts
+
+## Create aliases and completions
     kubectl completion bash > kc.bash
     source ./kc.bash
     
-# ReplicationController and ReplicaSet
+## ReplicationController and ReplicaSet
 A ReplicaSet ensures that a specified number of pod replicas are running at any given time. 
 However, a Deployment is a higher-level concept that manages ReplicaSets and provides declarative 
 updates to Pods along with a lot of other useful features. Therefore, we recommend using 
@@ -24,7 +26,7 @@ orchestration or don’t require updates at all.
 This actually means that you may never need to manipulate ReplicaSet objects: 
 use a Deployment instead, and define your application in the spec section.
 
-## selector is the main difference between RC and RS/Depl
+### Selector is the main difference between RC and RS/Depl
 RC does not need spec.selector.matchLabels. RC just needs a template inside the spec
 RS and Deployment needs to select the pods from the template using a spec.selector.matchLabels manifestation
 
@@ -60,34 +62,34 @@ a ReplicationController makes sure that a pod or a homogeneous set of pods is al
 and available. ReplicaSet is apiVersion apps/v1. RS needs selector/matchLabels whereas 
 for ReplicationController it's optional.  
 
-## labels
+### labels
 labels are defined for k8 objects such as pods. A service or controller can use 
 selector/matchLabels section to filter by key=value to select pods to control.  
 
-## create replicaset
+### create replicaset
     kubectl create -f rs.yaml
 
-## get replicasets
+### get replicasets
     kubectl get rs  
     kubectl get rs rsname -o yaml > rsname.yaml
 
-## edit replicasets
+### edit replicasets
     kubectl edit replicaset rsname 
     
 will extract and open yaml in vi. Edit and save to apply.  Make sure the existing pods need to be deleted   
 or the rs itself needs to be deleteted and recreated to have new pods with new changes
 
-## delete replicasets
+### delete replicasets
     kubectl delete replicaset rs-name  
 
-## scale replicaset
+### scale replicaset
     kubectl scale --replicas=N rsdef.yaml  
     kubectl scale rs rs-name --replicas=N
 
-## update/replace replicaset
+### update/replace replicaset
     kubectl replace -f rsdef.yaml  
 
-# Deployments
+## Deployments
 Deployments are 
     apiVesrion: apps/v1  
     kind: Deployment  
@@ -98,7 +100,7 @@ Deployments are
 
 Deployment creates a replicaset. Creates pods, perform rolling updates and rollback if needed.  
 
-# Namespaces
+## Namespaces
 namespaces have 1) permission policies 2) quota such as max number of nodes/services/deployments etc.  
 You can access resources across namespaces using fully qualified name such as : objectname.namespace-name.svc.cluster.local  
 You can separate Dev and Prod using two namespaces.
@@ -144,7 +146,7 @@ ResourceQuota
             requests.memory: 5Gi  
             limits.cpu: "10"  
             limits.memory: 5Gi  
-## how to access db-service in dev name space from default namespace
+### how to access db-service in dev name space from default namespace
 within the same namespace, use:  
 
     mysql.connect("db-service")
@@ -157,10 +159,10 @@ where cluster.local is the default domain name of the cluster
 svc.cluster.local is the default subdomain for all services in the cluster
 ![](https://imgur.com/qdDAXcl.jpg)
 
-## how to get pods from all namespaces
+### how to get pods from all namespaces
     kubectl get pods --all-namespaces
     
-## how to limit resources in a namesapce
+### how to limit resources in a namesapce
 When several users or teams share a cluster with a fixed number of nodes, there is a concern that one team could use more 
 than its fair share of resources.
 
@@ -217,7 +219,8 @@ example to create many resourcequota objects
             scopeName: PriorityClass
             values: ["low"]
 
-# Docker Containers
+# Configuration
+## Docker Containers
 Kubernetes containers are meant to run a task to completion and exit. Once the task is completed the container exits 
 the cmd statement specified in the dockerfile. 
 In the docker file there are two important items: ENTRYPOINT and CMD
@@ -258,7 +261,7 @@ how to pass command arguments from yaml in kubernetes?  use spec.containers.args
             -   name: ccc
                 args: ["20"]
 
-## To override the entrypoint + cmd of docker
+### To override the entrypoint + cmd of docker
 In yaml in kubernetes, use spec.containers.command and spec.containers.args. These two are used to
 override enrrypoint + cmd of the docker image.
 
@@ -270,7 +273,7 @@ override enrrypoint + cmd of the docker image.
 
 k8 command is same as docker ENTRYPOINT. k8 args is same as docker CMD
 
-## pass environment variables to container using env
+### pass environment variables to container using env
     spec
         containers
         -   name
@@ -280,7 +283,7 @@ k8 command is same as docker ENTRYPOINT. k8 args is same as docker CMD
                 -   name: accessKey
                     value: DFN456DF$FG23456DFGH^&C456
         
-## run using command line passing env        
+### run using command line passing env        
                     
     docker run -e accessID=XXXXXXXXXX imagename
     
@@ -292,7 +295,7 @@ variables using:
         String accessKey = System.getenv("accessKey");  
         
                     
-# ConfigMaps
+## ConfigMaps
 ConfigMaps allow you to decouple configuration artifacts from image content to keep containerized applications portable.
 
     kubectl create configmap mycmp --from-literal=key1=val1 --from-literal=key2=val2
@@ -309,7 +312,7 @@ ConfigMaps allow you to decouple configuration artifacts from image content to k
     kubectl get configmaps  
     kubectl describe configmaps  
 
-## inject configMap data into pod
+### inject configMap data into pod
     use spec.containers.envFrom.configmapRef.name=nameofthe-config-map  
     use spec.containers.envFrom.configmapRef.key=nameofthe-key  
 
@@ -333,10 +336,10 @@ ConfigMaps allow you to decouple configuration artifacts from image content to k
                     configMapKeyRef:  
                         name: app-config  # only one key AAPP_COLOR_MAIN is sent as env var APP_COLOR
                         key: APP_COLOR_MAIN
-# Secrets
+## Secrets
     kubectl create secret generic mypassword --from-literal=REDIS_PASS=!@#$%^&GGHJ   
     kubectl create secret generic mypassword --from-file=mysecrets.properties    
-## yaml
+### yaml
     apiVersion: v1
     kind: Secret
     metadata:
@@ -344,10 +347,10 @@ ConfigMaps allow you to decouple configuration artifacts from image content to k
     data:
         REDIS_PASS: base64-encoded-pass  # use echo -n pass | base64 to get the base64-encoded-pass
         REDIS_HOST: base64-encoded-hostname # use echo -n hostname | base64 to get the base64-encoded-hostname
-## base64 encoding
+### base64 encoding
     echo -n redis123 | base64
     bXlwYXN3b3Jk
-## base64 decoding
+### base64 decoding
     echo -n bXlwYXN3b3Jk | base64  --decode
     mypassword
 ### Inject the *entire* secret into a container spec as env vars
@@ -413,10 +416,10 @@ and see the logs using
                     secretKeyRef:
                         name: app-secrets
                         key:  REDIS_PASS
-#  Security
+##  Security
 Pod security context specifies the context for security of the pods. Container security context specifies the context for 
 the container. Container context always overrides Pod security context.
-## Security Context at pod level
+### Security Context at pod level
     spec
         containers
         -   name: c1
@@ -426,7 +429,7 @@ the container. Container context always overrides Pod security context.
             capabilities:
                 add: ["MAC_ADMIN"]
 
-## Security Context for the container
+### Security Context for the container
 runasUser runasGroup fsGroup
 security context for container (spec.container.securityContext) overrides the security context for the pod 
 (spec.securityContext)
@@ -449,7 +452,7 @@ the securityContext section of the Container manifest.
                 capabilities:
                     add: ["PC_ADMIN"]
 
-# Service accounts
+## Service accounts
 A service account provides an identity for processes that run in a Pod.
 When you (a human) access the cluster (for example, using kubectl), you are authenticated by the apiserver as a 
 particular User Account (currently this is usually admin, unless your cluster administrator has customized your cluster). 
@@ -499,7 +502,7 @@ you can choose to not mount any sa into a pod by using
     spec
         automountServiceAccountToken: false
 
-# Resource Requirements
+## Resource Requirements
 Min amount of requirement for a pod to run: .5 cpu and 256Mi mem
 Ki = 1024 K=1000
 Mi=1048576 M=1000,000
@@ -516,7 +519,7 @@ you can change the resources and limits in the spec
                 memory:  
                 cpu:  
 
-# taints and tolerations
+## taints and tolerations
 a node can be tainted (using Node 1 is tainted with: taint=blue) so that not all pods can be hosted on that node.  
 Then pods can be specified to tolerate a taint. For example pod A can ve specified as tolerate=blue and pod b can be specified to tolerate=red
 in such scenario only pod A will be placed in node 1.  
@@ -537,7 +540,7 @@ in the pod spec use tolerations
     kubesctl describe nore kubemaster | grep Taint  
 will show that master is tainted hence no pods are scheduled to master node  
 
-#nodeSelector
+## nodeSelector
 enables to choose a node (as opposed to taints which disables a node for pods )  
 nodes have labels in metadata as follows:  
 
@@ -580,7 +583,7 @@ using nodeAffinity you can use complex logical operators such as In, NotIn Exist
                                 - Large  
                                 - Medium  
 
-# multi container pods
+# Multi-Container pods
 
 patterns:
 
@@ -615,7 +618,8 @@ Sharing volumes
         # this field is optional  
         type: DirectoryOrCreate  
 
-# Readiness Probes
+# Observability
+## Readiness Probes
 Pod stages  
 
     Pending (untill a node is found)  
@@ -667,11 +671,11 @@ But sometimes the container may not crash but may not be accisible due to a bug 
             periodSeconds: 5  
             failureThresholds: 8 # default is 3  
 
-# container logging
+## container logging
     docker logs -f dockername  # shows the logs for the container
     kubectl logs -f podname dockername  # shows the logs for the container dockername in the pod: podname
 
-# Monitor resource consumption
+## Monitor resource consumption
 CPU, memory  
 Open Source: Prometeus, MetricsServer (HeapSter), ElasticStack   
 proprietary: DataDog, DynaTree   
@@ -688,7 +692,8 @@ to see the metrics. Only one metrics server per k8 cluster
     kubectl top node  
     kubectl top pod  
 
-# Labels and Selectors
+# Pod Design
+## Labels and Selectors
 labels are used to tag a kubernetes object. Labels are mentioned in the metadat  
 
     metadata:  
@@ -721,7 +726,7 @@ example
                     app: App1        # <--------  
             spec:  
 
-# Rollout and Versioning in Deployments
+## Rollout and Versioning in Deployments
 Revision1 is created when a new deployment is created  
 when the new image/spec applied then new Revision2 is pplied  
 
@@ -736,7 +741,7 @@ when the new image/spec applied then new Revision2 is pplied
     1         <none>  
     2         <none>  
 
-chaning the number of replicas does not count as new revision since we are not changing the template.  
+changing the number of replicas does not count as new revision since we are not changing the template.  
 changing image counts as new revision since we are chaning the template  
 
 ## deployment strategies
@@ -914,7 +919,8 @@ schedule format
      │ │ │ │ │
      * * * * * command to execute  
 
-# Services
+# Services and Networking
+
 Services enable a group of pods (with same label) to be accessible as a group and be load balanced and available to 
 another pod or end user. Example: back end pods to be available to front end pods front end pods to be accessible to 
 end users etc. Services enable loose coupling between micro services in our application.
@@ -1004,7 +1010,7 @@ is running at port 443 but targetport is 6433
 ## 3) LoadBalancer
 Balances load across multiple replicas of a pod. Assigns a public ip and a port
 
-# Ingress 
+## Ingress 
 Ingress, added in Kubernetes v1.1, exposes HTTP and HTTPS routes from outside the cluster to services within the cluster. Traffic routing is controlled by rules defined on the ingress resource.
 
    internet  
@@ -1013,7 +1019,7 @@ Ingress, added in Kubernetes v1.1, exposes HTTP and HTTPS routes from outside th
    --|-----|--  
    [ Services ] 
 
-## Ingress controllers
+### Ingress controllers
 
 Kubernetes cluster does not come with a builtin ingress controller by default. We must deploy a third party ingress controller manually. Choose between one of below solutions as a ingress controller
 1) GCP HTTP(S) Load balancer for GCE
@@ -1104,7 +1110,7 @@ create ServiceAccount and ConfigMap as well
 
 ![ingress](https://i.imgur.com/uCgjqmJ.jpg)
 
-## Ingress resource
+### Ingress resource
 Ingress resource is a set of rules and configurtions.
 You can specify rules such as all traffic goes to service
 or all traffic to url /path1 goes to service1 and /path2 to go to service2
@@ -1190,7 +1196,7 @@ to see the contents of the Ingress-My-Store ingress, run the describe cmd:
 
     kubectl describe ingress Ingress-My-Store
 
-# Network Policies
+## Network Policies
 A network policy is a specification of how groups of pods are allowed to communicate with each other and other network endpoints.  
 NetworkPolicy resources use labels to select pods and define rules which specify what traffic is allowed to the selected pods.  
 
@@ -1238,7 +1244,8 @@ spec:
     - protocol: TCP
       port: 5978
 
-# Volumes
+# State Persistence
+## Volumes
 
 Volume can be used to persist the pod's data on a folder inside the node (using hostPath.path: /data, hostPath.type: Directory). Even if the pod is deleted the volume will not be deleted.
 hostPath type of volumes create the volumes pointing to a directory on the node so it will work good on a single node cluster.
@@ -1263,7 +1270,7 @@ On a multi node cluster, the pod will use /data of the node its residing on.
             - key: log_level
                 path: log_level
                 
-# Persistent Volume
+## Persistent Volume
 
     apiVersion: v1
     kind: PersistentVolume
