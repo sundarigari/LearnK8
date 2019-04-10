@@ -1294,6 +1294,7 @@ calim one-to-one volume
             requests:
                 storage: 100Mi
 
+###  get persistent volumes
 
         kubectl get persistentvolume
 ## use persistent volume claim inside pod
