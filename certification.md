@@ -10,44 +10,62 @@
 | 13%   |  Services & Networking  |
 | 8%    |  State Persistence      |
 
-
+# Create aliases and completions
+    kubectl completion bash > kc.bash
+    source ./kc.bash
+    
 # ReplicationController and ReplicaSet
-A ReplicaSet ensures that a specified number of pod replicas are running at any given time. However, a Deployment is a higher-level concept that manages ReplicaSets and provides declarative updates to Pods along with a lot of other useful features. Therefore, we recommend using Deployments instead of directly using ReplicaSets, unless you require custom update orchestration or don’t require updates at all.
+A ReplicaSet ensures that a specified number of pod replicas are running at any given time. 
+However, a Deployment is a higher-level concept that manages ReplicaSets and provides declarative 
+updates to Pods along with a lot of other useful features. Therefore, we recommend using 
+Deployments instead of directly using ReplicaSets, unless you require custom update 
+orchestration or don’t require updates at all.
 
-This actually means that you may never need to manipulate ReplicaSet objects: use a Deployment instead, and define your application in the spec section.
+This actually means that you may never need to manipulate ReplicaSet objects: 
+use a Deployment instead, and define your application in the spec section.
 
-Example
-frontend.yaml 
+## selector is the main difference between RC and RS/Depl
+RC does not need spec.selector.matchLabels. RC just needs a template inside the spec
+RS and Deployment needs to select the pods from the template using a spec.selector.matchLabels manifestation
+
+
+Example replicaset using frontend.yaml 
 
     apiVersion: apps/v1
     kind: ReplicaSet
     metadata:
-    name: frontend
-    labels:
-        app: guestbook
-        tier: frontend
+      name: frontend
+      labels:
+          app: guestbook
+          tier: frontend
     spec:
-    # modify replicas according to your case
-    replicas: 3
-    selector:
-        matchLabels:
-        tier: frontend
-    template:
-        metadata:
-        labels:
+      # modify replicas according to your case
+      replicas: 3
+      selector:
+          matchLabels:
             tier: frontend
-        spec:
-        containers:
-        - name: php-redis
-            image: gcr.io/google_samples/gb-frontend:v3
+      template:
+          metadata:
+            labels:
+                tier: frontend
+          spec:
+            containers:
+              - name: php-redis
+                image: gcr.io/google_samples/gb-frontend:v3
             
-Note: A Deployment that configures a ReplicaSet is now the recommended way to set up replication as opposed to using ReplicationController. A ReplicationController ensures that a specified number of pod replicas are running at any one time. In other words, a ReplicationController makes sure that a pod or a homogeneous set of pods is always up and available. ReplicaSet is apiVersion apps/v1. RS needs selector/matchLabels whereas for ReplicationController it's optional.  
+Note: A Deployment that configures a ReplicaSet is now the recommended way to set up 
+replication as opposed to using ReplicationController. A ReplicationController ensures 
+that a specified number of pod replicas are running at any one time. In other words, 
+a ReplicationController makes sure that a pod or a homogeneous set of pods is always up 
+and available. ReplicaSet is apiVersion apps/v1. RS needs selector/matchLabels whereas 
+for ReplicationController it's optional.  
 
 ## labels
-labels are defined for k8 objects such as pods. A service or controller can use selector/matchLabels section to filter by key=value to select pods to control.  
+labels are defined for k8 objects such as pods. A service or controller can use 
+selector/matchLabels section to filter by key=value to select pods to control.  
 
 ## create replicaset
-    kubectl create -f rs-def.yaml
+    kubectl create -f rs.yaml
 
 ## get replicasets
     kubectl get rs  
@@ -70,7 +88,7 @@ or the rs itself needs to be deleteted and recreated to have new pods with new c
     kubectl replace -f rsdef.yaml  
 
 # Deployments
-
+Deployments are 
     apiVesrion: apps/v1  
     kind: Deployment  
     template: # has pod spec  
@@ -78,13 +96,13 @@ or the rs itself needs to be deleteted and recreated to have new pods with new c
             containers:
             - name:
 
-Deployment creates a replicaset.
-Can create pods, perform rolling updates and rollback if needed.  
+Deployment creates a replicaset. Creates pods, perform rolling updates and rollback if needed.  
 
 # Namespaces
-namespaces have 1) permission policies 2) quota such as max number od nodes/services/deployments etc.  
+namespaces have 1) permission policies 2) quota such as max number of nodes/services/deployments etc.  
 You can access resources across namespaces using fully qualified name such as : objectname.namespace-name.svc.cluster.local  
-first create Namespace object using  
+You can separate Dev and Prod using two namespaces.
+first create Namespace object using  yaml.
 
 create-ns.yaml  
  
@@ -126,14 +144,89 @@ ResourceQuota
             requests.memory: 5Gi  
             limits.cpu: "10"  
             limits.memory: 5Gi  
+## how to access db-service in dev name space from default namespace
+within the same namespace, use:  
 
-# Docker commands
+    mysql.connect("db-service")
 
-containers are meant to run a task to completion and exit.  
-Once the task is completed the container exits  
-the cmd statement in the dockerfile specifys what command to run to completion  
+from outside the dev namespace, use   
+
+    mysql.connect("db-service.dev.svc.cluster.local")
+    
+where cluster.local is the default domain name of the cluster
+svc.cluster.local is the default subdomain for all services in the cluster
+![](https://imgur.com/qdDAXcl.jpg)
+
+## how to get pods from all namespaces
+    kubectl get pods --all-namespaces
+    
+## how to limit resources in a namesapce
+When several users or teams share a cluster with a fixed number of nodes, there is a concern that one team could use more 
+than its fair share of resources.
+
+Resource quotas are a tool for administrators to address this concern. A resource quota, defined by a ResourceQuota object, 
+provides constraints that limit aggregate resource consumption per namespace. It can limit the quantity of objects that 
+can be created in a namespace by type, as well as the total amount of compute resources that may be consumed by 
+resources in that project.    
+
+example to create many resourcequota objects
+
+    apiVersion: v1
+    kind: List
+    items:
+    - apiVersion: v1
+      kind: ResourceQuota
+      metadata:
+        name: pods-high
+      spec:
+        hard:
+          cpu: "1000"
+          memory: 200Gi
+          pods: "10"
+        scopeSelector:
+          matchExpressions:
+          - operator : In
+            scopeName: PriorityClass
+            values: ["high"]
+    - apiVersion: v1
+      kind: ResourceQuota
+      metadata:
+        name: pods-medium
+      spec:
+        hard:
+          cpu: "10"
+          memory: 20Gi
+          pods: "10"
+        scopeSelector:
+          matchExpressions:
+          - operator : In
+            scopeName: PriorityClass
+            values: ["medium"]
+    - apiVersion: v1
+      kind: ResourceQuota
+      metadata:
+        name: pods-low
+      spec:
+        hard:
+          cpu: "5"
+          memory: 10Gi
+          pods: "10"
+        scopeSelector:
+          matchExpressions:
+          - operator : In
+            scopeName: PriorityClass
+            values: ["low"]
+
+# Docker Containers
+Kubernetes containers are meant to run a task to completion and exit. Once the task is completed the container exits 
+the cmd statement specified in the dockerfile. 
+In the docker file there are two important items: ENTRYPOINT and CMD
+Entrypoint + cmd tells k8 what command to run to completion along with arguments. 
 
     CMD "ngnix"  
+    CMD ["sleep", "5"]
+    CMD sleep 5
+    
 
 entry point   
 
@@ -145,79 +238,92 @@ with entrypoint just pass the parameters to the entrypoint (without mentioning t
     
 ENTRYPOINT is always prepended to CMD  
 
-    FROM ubuntu  
-    ENTRYPOINT ["sleep"]  
-    CMD ["20"]  
+    FROM ubuntu
+    ENTRYPOINT ["sleep"]
+    CMD ["20"]
 
-you can simply run using 
+you can simply run using docker run. The arguments passed to docker run will replace CMD. Entrypoint will not change.
 
-    dockr run my-image  
+    dockr run my-image 22
 
-you can override the entrypoint using   
+You can override the entrypoint using   
 
-    docker run --entrypoint sleep2.0  
+    docker run --entrypoint sleepv2 ubuntu-sleeper 10
+the new entrypoint will be sleep2 and new CMD will be 10 thus making the docker sleep for 10 sec using sleepv2 
 
-how to pass command arguments from yaml in kubernetes?  use spec.containers.args: ["arg1", "arg2"]  
+how to pass command arguments from yaml in kubernetes?  use spec.containers.args: ["arg1", "arg2"]
 
-    spec  
-        containers  
-            -   name: ccc  
-                args: ["20"]  
+    spec
+        containers
+            -   name: ccc
+                args: ["20"]
 
-how to override the entrypoint of docker from yaml in kubernetes?  use spec.containers.command: ["sleep"]  
+## To override the entrypoint + cmd of docker
+In yaml in kubernetes, use spec.containers.command and spec.containers.args. These two are used to
+override enrrypoint + cmd of the docker image.
 
-    spec  
-        containers  
-            -   name: ccc  
-                command: ["sleep2.0"]   
-                args: ["20"]  
+    spec
+        containers
+            -   name: ccc
+                command: ["sleep2.0"]
+                args: ["20"]
 
-k8 command is smae as docker ENTRYPOINT
-k8 args is same as docker CMD
+k8 command is same as docker ENTRYPOINT. k8 args is same as docker CMD
 
-## env in container
-    spec  
-        containers  
-        -   name  
-            env:  
-                -   name: key1  
-                    value:  val1  
-                -   name: key2  
-                    value: val2  
-            
+## pass environment variables to container using env
+    spec
+        containers
+        -   name
+            env:
+                -   name: accessId
+                    value:  CVGHDFGJH087654ASDFGHJK
+                -   name: accessKey
+                    value: DFN456DF$FG23456DFGH^&C456
+        
+## run using command line passing env        
+                    
+    docker run -e accessID=XXXXXXXXXX imagename
+    
+in your docker image, in the entrypoint java main program (or ny other language), you can access the above environment 
+variables using:
+
+    public static void main(String[] args) {        
+        String accessId = System.getenv("accessId");  
+        String accessKey = System.getenv("accessKey");  
+        
+                    
 # ConfigMaps
 ConfigMaps allow you to decouple configuration artifacts from image content to keep containerized applications portable.
 
-    kubectl create configmap mycmp --form-literal=key1=val1 --from-literal=key2=val2  
-    kubectl create -f mycmp.yaml  
+    kubectl create configmap mycmp --from-literal=key1=val1 --from-literal=key2=val2
+    kubectl create -f mycmp.yaml
 
-    apiVersion: v1  
-    kind: Configmap  
-    metadata:  
-        name: mycmp  
-    data:  
-        key1:val1  
-        key2:val2  
+    apiVersion: v1
+    kind: Configmap
+    metadata:
+        name: mycmp
+    data:
+        key1:val1
+        key2:val2
 
     kubectl get configmaps  
     kubectl describe configmaps  
 
-## inject configmap data into pod
+## inject configMap data into pod
     use spec.containers.envFrom.configmapRef.name=nameofthe-config-map  
     use spec.containers.envFrom.configmapRef.key=nameofthe-key  
 
+### to inject the *entire* config map into a container spec
+    spec
+        containers
+        -   name: nm
+            envFrom:
+                - configMapRef:
+                    name: configmap1  # entire configmap1 is sent as env
+                - configMapRef:
+                    name: configmap2  # entire configmap2 is sent as env
 
-### to inject the entire configmap into a container spec
-    spec  
-        containers  
-        -   name  
-            envFrom:  
-                -   configMapRef:   
-                        name: configmap1  
-                -   configMapRef:   
-                        name: configmap2  
-
-### to inject a single key from a configmap into a container spec
+### to inject a *single value* from a config map app-config  into a container spec
     spec  
         containers  
         -   name  
@@ -225,30 +331,26 @@ ConfigMaps allow you to decouple configuration artifacts from image content to k
             -   name: APP_COLOR  
                 valueFrom:    
                     configMapKeyRef:  
-                        name: app-config  
-                        key:  aAPP_COLOR  
-
+                        name: app-config  # only one key AAPP_COLOR_MAIN is sent as env var APP_COLOR
+                        key: APP_COLOR_MAIN
 # Secrets
-    
     kubectl create secret generic mypassword --from-literal=REDIS_PASS=!@#$%^&GGHJ   
     kubectl create secret generic mypassword --from-file=mysecrets.properties    
-
-yaml
-
-    apiVersion: v1  
-    kind: Secret  
-    metadata:  
-        name: app-secrets  
-    data:  
-        REDIS_PASS: base64-encoded-pass  
-        REDIS_HOST: base64-encoded-hostname  
-
-    echo -n redis123 | base64  
-    bXlwYXN3b3Jk  
-    echo -n bXlwYXN3b3Jk | base64  --decode  
-    mypassword  
-
-### to inject the entire secrets into a container spec
+## yaml
+    apiVersion: v1
+    kind: Secret
+    metadata:
+        name: app-secrets
+    data:
+        REDIS_PASS: base64-encoded-pass  # use echo -n pass | base64 to get the base64-encoded-pass
+        REDIS_HOST: base64-encoded-hostname # use echo -n hostname | base64 to get the base64-encoded-hostname
+## base64 encoding
+    echo -n redis123 | base64
+    bXlwYXN3b3Jk
+## base64 decoding
+    echo -n bXlwYXN3b3Jk | base64  --decode
+    mypassword
+### Inject the *entire* secret into a container spec as env vars
     spec  
         containers  
         -   name  
@@ -257,25 +359,64 @@ yaml
                         name: mysecrets1  
                 -   secretRef:   
                         name: mysecrets2   
+                        
+### Inject *entire* secret into a pod as volume and files with names equal to the secret keys
+    kubectl create secret generic ssh-key-secret --from-file=ssh-privatekey=/path/to/.ssh/id_rsa --from-file=ssh-publickey=/path/to/.ssh/id_rsa.pub
 
+Above cmd will create a secret with two keys. The value is the entire contents of the file.
+Below yaml creates a secret with one key which is .secret-file and a  pod wth the  secret mounted as volume.
+ 
+    kind: Secret
+    apiVersion: v1
+    metadata:
+      name: dotfile-secret
+    data:
+      .secret-file: dmFsdWUtMg0KDQo=
+    ---
+    kind: Pod
+    apiVersion: v1
+    metadata:
+      name: secret-dotfiles-pod
+      labels:
+        name: secret-test
+    spec:
+      volumes:
+      - name: secret-volume
+        secret:
+          secretName: ssh-key-secret
+      containers:
+      - name: dotfile-test-container
+        image: k8s.gcr.io/busybox
+        command:  ["sh", "-c", "cd /etc/secret-dir && ls -la  && cat .secret-file"]
+        volumeMounts:
+        - name: secret-volume
+          readOnly: true
+          mountPath: "/etc/secret-dir"
 
-### to inject a single key from a secrets into a container spec
+The keys of the secret are now available as files inside mount path (/etc/secrets-dir folder)
+
+create this pod using  
+
+    kubectl apply -f secretWithDotFiles.yml
+
+and see the logs using
+
+    kubectl logs secret-dotfiles-pod
+                    
+### Inject a *single key* from a secrets into a container spec
     spec
         containers
         -   name
             env:
             -   name: REDIS_PASS
-                valueFrom:  
+                valueFrom:
                     secretKeyRef:
                         name: app-secrets
                         key:  REDIS_PASS
-
 #  Security
-
-    Pod security context specifies the context for security od the pods. 
-    Container scurity context specifies the context for the container. Container context always overrides Pod security context.
-
-## security context at pod level
+Pod security context specifies the context for security of the pods. Container security context specifies the context for 
+the container. Container context always overrides Pod security context.
+## Security Context at pod level
     spec
         containers
         -   name: c1
@@ -285,7 +426,16 @@ yaml
             capabilities:
                 add: ["MAC_ADMIN"]
 
-## security context for the container
+## Security Context for the container
+runasUser runasGroup fsGroup
+security context for container (spec.container.securityContext) overrides the security context for the pod 
+(spec.securityContext)
+Set capabilities for a Container
+With Linux capabilities, you can grant certain privileges to a process without granting all the privileges of the root 
+user. To add or remove Linux capabilities for a Container, include the capabilities field in the securityContext section 
+of the Container manifest. With Linux capabilities, you can grant certain privileges to a process without granting all 
+the privileges of the root user. To add or remove Linux capabilities for a Container, include the capabilities field in 
+the securityContext section of the Container manifest.
     spec
         containers
         -   name: c1
@@ -299,21 +449,25 @@ yaml
                 capabilities:
                     add: ["PC_ADMIN"]
 
-# service accounts
-RBAC can be used to a assign roles to a sa
-authentication
-todo
+# Service accounts
+A service account provides an identity for processes that run in a Pod.
+When you (a human) access the cluster (for example, using kubectl), you are authenticated by the apiserver as a 
+particular User Account (currently this is usually admin, unless your cluster administrator has customized your cluster). 
+Processes in containers inside pods can also contact the apiserver. When they do, they are authenticated as a particular 
+Service Account (for example, default).
 
-Kubernetes has 1)user account Ex: admin, developer etc  used by humans
-2)service account ex: Prometheus Jenkins used by application to interact with kubernetes api 
+RBAC can be used to a assign roles to a service account. 
+Kubernetes has  
+    1) user account Ex: admin, developer etc  used by humans  
+    2) service account ex: Prometheus Jenkins used by application to interact with kubernetes api  
 
-kubectl create serviceccount dashboard-sa
-kubectl get serviceaccount
+    kubectl create serviceccount dashboard-sa
+    kubectl get serviceaccount
 
-serviceaccount creates automatically a token, creates a secret object, copies the token into the secret object and then links the secret to the sa.
-To see the token issue kubectl describe secret command for the secret used by the sa
+serviceaccount creates automatically a token, creates a secret object, copies the token into the secret object and then 
+links the secret to the sa. To see the token issue kubectl describe secret command for the secret used by the sa.
 
-even if the third party application is not running inside the cluster, it can call the k8 api using this token.
+Even if the third party application is not running inside the cluster, it can still call our kubernetes api using this token.
 But if the 3rd party app is hosted inside the cluster, you can simply mount a service account's secret as a volume into the pod
 
 
@@ -643,14 +797,34 @@ Rollback:
 
         kubectl rollout undo  deployment/depname  
 
-# Jobs  
+# Jobs  - Run to Completion
+A Job creates one or more Pods and ensures that a specified number of them successfully terminate. As pods successfully 
+complete, the Job tracks the successful completions. When a specified number of successful completions is reached, the 
+task (ie, Job) is complete. Deleting a Job will clean up the Pods it created.
 
+A simple case is to create one Job object in order to reliably run one Pod to completion. The Job object will start a 
+new Pod if the first Pod fails or is deleted (for example due to a node hardware failure or a node reboot).
 
-    spec:  
-        restartPolicy: Always  
+You can also use a Job to run multiple Pods in parallel
 
-The above spec will try to run the pod if it exits thus making sure the pod erver is always running  
-Jobs do not run for ever. They perform a task such as adding two numbers and exit with the result copied to some text file on a log serevr  
+    apiVersion: batch/v1
+    kind: Job
+    metadata:
+      name: pi
+    spec:
+      template:
+        spec:
+          containers:
+          - name: pi
+            image: perl
+            command: ["perl",  "-Mbignum=bpi", "-wle", "print bpi(2000)"]
+          restartPolicy: Never
+      backoffLimit: 4
+ 
+
+The above spec will try to run the pod if it exits thus making sure the pod nerver is always running  
+Jobs do not run for ever. They perform a task such as adding two numbers and exit with the result copied to some text
+ file on a log server  
 
 Job is like replicaset, a set of pods except the pods run to completion and do not re-start  
 job definition  
@@ -673,9 +847,40 @@ job definition
 Pod Backoff failure policy
 There are situations where you want to fail a Job after some amount of retries due to a logical error in configuration etc. To do so, set .spec.backoffLimit to specify the number of retries before considering a Job as failed. The back-off limit is set by default to 6. Failed Pods associated with the Job are recreated by the Job controller with an exponential back-off delay (10s, 20s, 40s …) capped at six minutes. The back-off count is reset if no new failed Pods appear before the Job’s next status check.
 
-# cronjobs
 
-cronjob definition (notice jobTemplate and total 3 specs)  
+## Parallel Jobs
+There are three main types of task suitable to run as a Job:
+
+## Non-parallel Jobs
+normally, only one Pod is started, unless the Pod fails.
+the Job is complete as soon as its Pod terminates successfully.
+Parallel Jobs with a fixed completion count:
+specify a non-zero positive value for .spec.completions.
+the Job represents the overall task, and is complete when there is one successful Pod for each value in the range 1 
+to .spec.completions.
+not implemented yet: Each Pod is passed a different index in the range 1 to .spec.completions.
+
+## Parallel Jobs with a work queue:
+do not specify .spec.completions, default to .spec.parallelism.
+the Pods must coordinate amongst themselves or an external service to determine what each should work on. For example, 
+a Pod might fetch a batch of up to N items from the work queue.
+each Pod is independently capable of determining whether or not all its peers are done, and thus that the entire Job 
+is done.
+when any Pod from the Job terminates with success, no new Pods are created.
+once at least one Pod has terminated with success and all Pods are terminated, then the Job is completed with success.
+once any Pod has exited with success, no other Pod should still be doing any work for this task or writing any output.
+ They should all be in the process of exiting.
+For a non-parallel Job, you can leave both .spec.completions and .spec.parallelism unset. When both are unset, both 
+are defaulted to 1.
+
+For a fixed completion count Job, you should set .spec.completions to the number of completions needed. You can set 
+.spec.parallelism, or leave it unset and it will default to 1.
+
+For a work queue Job, you must leave .spec.completions unset, and set .spec.parallelism to a non-negative integer.
+
+# Cronjobs
+
+Cronjob definition (notice jobTemplate and total 3 specs)  
 
     apiVersion: batch/v1beta1  
     kind: CronJob  
@@ -710,7 +915,9 @@ schedule format
      * * * * * command to execute  
 
 # Services
-Services enable a group of pods (with same label) to be accessible as a group and be load balanced and available to another pod or end user. Example: back end pods to be available to front end pods front end pods to be accessible to end users etc. Services enable loose coupling between micro services in our application.
+Services enable a group of pods (with same label) to be accessible as a group and be load balanced and available to 
+another pod or end user. Example: back end pods to be available to front end pods front end pods to be accessible to 
+end users etc. Services enable loose coupling between micro services in our application.
 There are three types of services.
 
 Create a service yaml template using --dry-run and expose your deployment using:
@@ -718,9 +925,10 @@ Create a service yaml template using --dry-run and expose your deployment using:
     kubectl expose deployment -n name-space deployment-name --type=NodePort --port=80 --name=service-name --dry-run -o yaml >myservice.yaml
 
 
-## NodePort: 
+## 1) NodePort: 
 A port on a pod is mapped to the nodeip same port so that the pod can be accessible at nodeip:nodePort
 ![service nodeport](https://imgur.com/488umts.jpg)  
+
 
 Node (nodeip, nodePort) <-> Service (ip Port) <-> Pod (ip, TargetPort)
 nodeip: Is the ip address of any node. If you have multiple nodes, you can use any one node's ip and it will work
@@ -755,7 +963,7 @@ Use the following command to get the service
 
     kubectl get services
 
-## ClusterIP
+## 2) ClusterIP
 The service creates a virtual ip inside the cluster
 
  apiVersion: v1
@@ -793,7 +1001,7 @@ is running at port 443 but targetport is 6433
     Session Affinity:  None
     Events:            <none>
 
-## LoadBalancer
+## 3) LoadBalancer
 Balances load across multiple replicas of a pod. Assigns a public ip and a port
 
 # Ingress 
@@ -831,8 +1039,6 @@ ngnix ingress controller is deployed like any other k8 resurce in the cluster. I
     subjects:
         - kind: ServiceAccount
         name: ingress-serviceaccount
-
-
 
 We create the deployment in namespace ingress-space using below deploy.yaml:
 
@@ -927,7 +1133,7 @@ create ingress resource
     kubectl create -f ingress-wear.yaml
 
 Few more examples of Ingress:
-    ----
+
     apiVersion: extensions/v1beta
     kind: Ingress
     metadata:
@@ -1073,7 +1279,7 @@ On a multi node cluster, the pod will use /data of the node its residing on.
 
         kubectl get persistentvolume
 
-## Persistent Voume Claim
+## Persistent Volume Claim
 pvc can use matchLabels to match multiple PVs
 calim one-to-one volume
 
@@ -1090,7 +1296,7 @@ calim one-to-one volume
 
 
         kubectl get persistentvolume
-## use persistent vaolume clain inside pod
+## use persistent volume claim inside pod
 
 kind: Deployment
 spec:
