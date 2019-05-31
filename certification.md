@@ -12,7 +12,9 @@ This exam curriculum includes these general domains and their weights on the exa
 | 8%    |  State Persistence      |
 
 # Core concepts
-
+## install docker minikube
+    docker-machine create --driver hyperv --hyperv-virtual-switch="Primary Virtual Switch" minikube
+    minikube start --vm-driver="hyperv" --hyperv-virtual-switch="Primary Virtual Switch"
 ## Create aliases and completions
     kubectl completion bash > kc.bash
     source ./kc.bash
@@ -295,9 +297,18 @@ variables using:
                     
 ## ConfigMaps
 ConfigMaps allow you to decouple configuration artifacts from image content to keep containerized applications portable.
+1) First Create a config map
+2) Next inject into a pod
+
 
     kubectl create configmap mycmp --from-literal=key1=val1 --from-literal=key2=val2
+using artifact yml file 
+
     kubectl create -f mycmp.yaml
+    kubectl get configmaps  
+    kubectl describe configmaps  
+    
+yml:
 
     apiVersion: v1
     kind: Configmap
@@ -306,9 +317,6 @@ ConfigMaps allow you to decouple configuration artifacts from image content to k
     data:
         key1:val1
         key2:val2
-
-    kubectl get configmaps  
-    kubectl describe configmaps  
 
 ### inject configMap data into pod
     use spec.containers.envFrom.configmapRef.name=nameofthe-config-map  
@@ -335,8 +343,8 @@ ConfigMaps allow you to decouple configuration artifacts from image content to k
                         name: app-config  # only one key AAPP_COLOR_MAIN is sent as env var APP_COLOR
                         key: APP_COLOR_MAIN
 ## Secrets
-    kubectl create secret generic mypassword --from-literal=REDIS_PASS=!@#$%^&GGHJ   
-    kubectl create secret generic mypassword --from-file=mysecrets.properties    
+    kubectl create secret generic mysec --from-literal=REDIS_PASS=password-plain-txt 
+    kubectl create secret generic mysec --from-file=mysecrets.properties    
 ### yaml
     apiVersion: v1
     kind: Secret
@@ -414,46 +422,62 @@ and see the logs using
                     secretKeyRef:
                         name: app-secrets
                         key:  REDIS_PASS
-##  Security
+
+## Docker Security
+By default docker runs with root user with pid=1. This root user has lesser privileges than the host's root user. For 
+example docker root user can't reboot host.
+
+You can run docker container using a different userid 
+ 
+    docker run --user=1000 ubuntu sleep 3600
+    
+Specify user in the Dockerfile
+    
+    FROM Ubuntu
+    USER 1000
+
+Add/Drop capabilities to docker user
+
+    docker run --cap-add  MAC_ADMIN ubuntu 
+    docker run --cap-drop KILL ubuntu 
+
+Add all capabilities 
+    
+    docker run --privileged  ubuntu 
+
+
+##  Security Contexts
 Pod security context specifies the context for security of the pods. Container security context specifies the context for 
-the container. Container context always overrides Pod security context.
-### Security Context at pod level
+the container. Security context for container (spec.container.securityContext) overrides the security context for the pod 
+(spec.securityContext)
+
+### Security Context at pod level and container level using manifest yaml file
     spec
-        containers
-        -   name: c1
-        -   name: c2
-        securityContext:
+        securityContext: # pod level security context
             runAsUer: 1000
             capabilities:
                 add: ["MAC_ADMIN"]
+        containers
+        -   name: c1
+            image: Ubuntu     
+            securityContext:  # container level security context. Overrides pod level sc
+                runAsUer: 1000 # runasUser runasGroup fsGroup
+                capabilities:
+                    add: ["MAC_ADMIN"]      
+        
 
-### Security Context for the container
-runasUser runasGroup fsGroup
-security context for container (spec.container.securityContext) overrides the security context for the pod 
-(spec.securityContext)
-Set capabilities for a Container
+### Set capabilities for a Container
 With Linux capabilities, you can grant certain privileges to a process without granting all the privileges of the root 
 user. To add or remove Linux capabilities for a Container, include the capabilities field in the securityContext section 
 of the Container manifest. With Linux capabilities, you can grant certain privileges to a process without granting all 
 the privileges of the root user. To add or remove Linux capabilities for a Container, include the capabilities field in 
 the securityContext section of the Container manifest.
-    spec
-        containers
-        -   name: c1
-            securityContext:
-                runAsUer: 1000
-                capabilities:
-                    add: ["MAC_ADMIN"]
-        -   name: c2
-            securityContext:
-                runAsUer: 1001
-                capabilities:
-                    add: ["PC_ADMIN"]
-
+    
+    
 ## Service accounts
 A service account provides an identity for processes that run in a Pod.
 When you (a human) access the cluster (for example, using kubectl), you are authenticated by the apiserver as a 
-particular User Account (currently this is usually admin, unless your cluster administrator has customized your cluster). 
+particular *User Account* (currently this is usually admin, unless your cluster administrator has customized your cluster). 
 Processes in containers inside pods can also contact the apiserver. When they do, they are authenticated as a particular 
 Service Account (for example, default).
 
@@ -489,7 +513,7 @@ In a deployment, specify in the pod spec under template as  serviceAccountName: 
     spec
         template:
             spec:
-                serviceAccountName: saname
+                serviceAccountName: saname  # for the entire pod
                 containers:
                 -
 when you change the sa for a pod, you have to delete the pod and recreate it to take effect.
@@ -502,13 +526,21 @@ you can choose to not mount any sa into a pod by using
 
 ## Resource Requirements
 Min amount of requirement for a pod to run: .5 cpu and 256Mi mem
-Ki = 1024 K=1000
-Mi=1048576 M=1000,000
-default limit for pod: 1cpu 512Mi
 
-you can change the resources and limits in the spec  
+Ki = 1024 (Kibibyte)
+K=1000
+Mi=1048576  (Mebibyte)
+M=1000,000
+Gi = 1024X1024X1024 (Bibibyte)
+G = 1000000000 bytes
 
-    spec  
+default limit for pod: 1 cpu 512Mi
+
+you can change the resources and limits in the spec  at the container level (unlike a serviceacount which is set at the pod level)
+
+    spec
+      containers
+      - image
         resources:  
             requests:  
                 memory:  
@@ -530,17 +562,18 @@ in the pod spec use tolerations
 
     spec:  
         tolerations:   
-        - key: "app"  
-        operator: "Equal"  
-        value: "blue"  
-        effect: "NoSchedule"  
+         -  key: "app"
+            operator: "Equal"
+            value: "blue"
+            effect: "NoSchedule"
 
-    kubesctl describe nore kubemaster | grep Taint  
+
+    kubectl describe node kubemaster | grep Taint
 will show that master is tainted hence no pods are scheduled to master node  
 
 ## nodeSelector
-enables to choose a node (as opposed to taints which disables a node for pods )  
-nodes have labels in metadata as follows:  
+Enables to choose a node (as opposed to taints which disables a node for pods) nodes have labels in metadata as follows:
+
 
     apiVersion: v1  
     kind: Node  
@@ -558,32 +591,48 @@ How to label the node with size=Large?
 
 
 in the pod definition, you can specify nodeSelector by label  
-    spec:  
-        nodeSelector:  
-            size: Large  
 
+    apiVersion: v1
+        kind: Pod
+        metadata:
+          name: nginx
+          labels:
+            env: test
+        spec:
+          containers:
+          - name: nginx
+            image: nginx
+            imagePullPolicy: IfNotPresent
+          nodeSelector:
+            disktype: ssd
 
-labels are simple mechanism to choose a pod  
-using nodeAffinity you can use complex logical operators such as In, NotIn Exists etc. to filter based on multiple lables/values  
+labels are simple mechanism to choose a pod.
+
+## nodeAffinity and anti affinity features
+
+Using nodeAffinity you can use complex logical operators such as In,
+NotIn Exists etc. to filter based on multiple lables/values
 
 
     spec:  
         affinity:  
-            nodeAffinity:  
-                requiredDuringSchedulingIgnoreDuringExecution:     
-                # or preferredDuringSchedulingIgnoreDuringExecution planned: requiredDuringSchedulingRequiredDuringExecution preferredDuringSchedulingRequiredDuringExecution  
-                    nodeSelectorTerms:  
-                        - matchingExpression:  
-                            -   key: size  
-                                operator: In    
-                                # NotIn Exists (any value as long as key exists) etc  
-                                values:  
-                                - Large  
-                                - Medium  
+            nodeAffinity:
+                requiredDuringSchedulingIgnoreDuringExecution:
+                # or preferredDuringSchedulingIgnoreDuringExecution planned: requiredDuringSchedulingRequiredDuringExecution preferredDuringSchedulingRequiredDuringExecution
+                    nodeSelectorTerms:
+                        - matchingExpression:
+                            -   key: size
+                                operator: In
+                                # NotIn Exists (any value as long as key exists) etc
+                                values:
+                                - Large
+                                - Medium
 
-# Multi-Container pods
+Like tolerations, nodeSelector and  nodeAffinity are applied at pod level as a property of pod spec (not at container level)
 
-patterns:
+# Multi-Container pods (10%)
+
+patterns of MCPs:
 
     Ambassador: A container that can switch between dev/test/prod dB's based the environment  
     Adaptor: A log agent container may need a log agent adapter container to convert the logs to a standard format  
@@ -614,7 +663,24 @@ Sharing volumes
         # directory location on host  
         path: /var/log/webapp  
         # this field is optional  
-        type: DirectoryOrCreate  
+        type: DirectoryOrCreate
+
+3 pod elk stack
+pod1:
+    containers:
+        app (writes logs to /app/logs mount pointing to log-volume)
+        sidecar (filebeat reads logs from/var/log/event-simulator/ mount pointing to log-volume)
+    volumes:
+        - hostPath:
+              path: /var/log/webapp
+              type: DirectoryOrCreate
+              name: log-volume
+
+pod2:
+    elastic-search : gets data from filebeat
+pod3:
+    kibana: dashboard for elastic search
+
 
 # Observability
 ## Readiness Probes
@@ -634,19 +700,23 @@ Pod Conditions are boolean variables (true or false). kubectl describe pod pod-n
 Even when the pod Ready condition is true the web application or db application could still be not ready (warming up state)  
 
 ## readinessProbes (for terminated containers)
-To solve this you need to add readinessProbes in the pod definition files.  
+To solve this you need to add readinessProbes in the pod definition files under spec.
 
     spec:  
         readinessProbe:  
             httpGet:  
                 path: /api/ready  
                 port: 8080  
-
+            initialDelaySeconds: 10
+            periodSeconds: 5  # how often to probe
+            failureThresholds: 8 # Total number of attempts. default is 3
     spec:  
         readinessProbe:  
             tcpSocket:  
                 port:  
-
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            failureThresholds: 8 # default is 3
     spec:  
         readinessProbe:  
             command:  
@@ -669,19 +739,22 @@ But sometimes the container may not crash but may not be accisible due to a bug 
             periodSeconds: 5  
             failureThresholds: 8 # default is 3  
 
-## container logging
+## Container logging
     docker logs -f dockername  # shows the logs for the container
     kubectl logs -f podname dockername  # shows the logs for the container dockername in the pod: podname
 
 ## Monitor resource consumption
 CPU, memory  
-Open Source: Prometeus, MetricsServer (HeapSter), ElasticStack   
+Open Source: Prometheus, MetricsServer (HeapSter), ElasticStack
 proprietary: DataDog, DynaTree   
 
-## MetricsServer
-Gathers metrics from nodes, pods, summarizes them to a in-memory database    
-Each node run a kubelet, which is responsible for receiving instructions from kubernetes master node and implement the instructions vis  launching/shutting down pods and containers   
-cAdvisor also runs on all nodes. responsible for aggregating the metrics of the node and sending to MetS  
+## MetricsServer (HeapSter is deprecated)
+In memory metrics aggregator. Gathers metrics from nodes, pods, summarizes them to a in-memory database
+Each node run an agent called  kubelet, which is responsible for receiving instructions from kubernetes master node
+and implement the instructions viz  launching/shutting down pods and containers
+
+cAdvisor is a sub component of kubelet, which also runs on all nodes.
+cAdvisor is responsible for aggregating the metrics of the node and sending to MetS
 
     minikube addons enable metrics-server  
 
@@ -725,8 +798,9 @@ example
             spec:  
 
 ## Rollout and Versioning in Deployments
-Revision1 is created when a new deployment is created  
-when the new image/spec applied then new Revision2 is pplied  
+When you create a deployment it triggers a new rollout which inturn creates a new depl. revision
+Revision1 is created when a new deployment with appimage:v1 is created
+when the new image(or spec) appimage:v2 applied to the deployment, then a new Revision2 is applied
 
     kubectl rollout status deployment/depname   
 
@@ -744,7 +818,7 @@ changing image counts as new revision since we are chaning the template
 
 ## deployment strategies
 Recreate strategy: Delete all pods and re-create them with newer image. Cons: App will be unavailable for some time  
-Rolling Update Strtegy: Deletes one pod and creates one new pod, then deletes another old pod and creates a new pod and so on  
+Rolling Update Strtegy: This is default. Deletes one pod and creates one new pod, then deletes another old pod and creates a new pod and so on
 
     strategy:   
         rollingUpdate:  
@@ -771,8 +845,9 @@ Events:
     Normal  ScalingReplicaSet  52s                 deployment-controller  Scaled up replica set redis-785f9d6bfb to 5  
     Normal  ScalingReplicaSet  2s                  deployment-controller  Scaled up replica set redis-785f9d6bfb to 10  
 
-### Rollback  
-    kubectl rollout undo deployment/redis  
+## Rollback
+    kubectl rollout undo deployment/redis
+
 ## kubectl run cmd actually creates a deployment  
     kubectl run ngnix --image nginx  
 
@@ -798,10 +873,15 @@ Status:
 
 Rollback:   
 
-        kubectl rollout undo  deployment/depname  
+    kubectl rollout undo  deployment/depname
 
 # Jobs  - Run to Completion
-A Job creates one or more Pods and ensures that a specified number of them successfully terminate. As pods successfully 
+By deafut k8 recreates the container if it exits (ppd: spec.restartPolicy: Always) , in an effort to keep it running continuously.
+
+A ReplicaSet is a set of pods that run continuously
+A job is like a RS which is a set of pods, only differes where the pods do not run continuously ((ppd: spec.restartPolicy: Never)
+
+A Job creates one or more Pods and ensures that a specified number of them successfully terminate. As pods successfully
 complete, the Job tracks the successful completions. When a specified number of successful completions is reached, the 
 task (ie, Job) is complete. Deleting a Job will clean up the Pods it created.
 
@@ -815,6 +895,10 @@ You can also use a Job to run multiple Pods in parallel
     metadata:
       name: pi
     spec:
+      completions: 3
+      # pods are created one after the other by default ( parallelism: 1). 2nd pod is created after the 1st pod completes
+      # is a pod fails then its not counted. You keep doing untill the number of successful completions = 3
+      parallelism: 3  # if you specify non 1 number then this number of pods run parallelly
       template:
         spec:
           containers:
@@ -836,7 +920,8 @@ job definition
     kind: Job  
     metadata:  
         name: math-add-job  
-    spec:  
+    spec:
+        backoffLimit: 20  # number of failed attempts before k8 gives up
         completions: 3  # pods are created sequentially. 2nd pod is created after 1st pod is finished. If a pod fails then it creates a new one until it has 3 successful creations  
         parallelism: 3  # run three parallel  
         template:  
@@ -883,7 +968,9 @@ For a work queue Job, you must leave .spec.completions unset, and set .spec.para
 
 # Cronjobs
 
-Cronjob definition (notice jobTemplate and total 3 specs)  
+Cronjob contains a Job under a jobTemplate, which contains a container under the template
+Cronjob definition (notice jobTemplate and total 3 specs)
+
 
     apiVersion: batch/v1beta1  
     kind: CronJob  
@@ -933,7 +1020,6 @@ Create a service yaml template using --dry-run and expose your deployment using:
 A port on a pod is mapped to the nodeip same port so that the pod can be accessible at nodeip:nodePort
 ![service nodeport](https://imgur.com/488umts.jpg)  
 
-
 Node (nodeip, nodePort) <-> Service (ip Port) <-> Pod (ip, TargetPort)
 nodeip: Is the ip address of any node. If you have multiple nodes, you can use any one node's ip and it will work
 
@@ -947,13 +1033,22 @@ sample service.yaml file
         type: NodePort
         port:
             - targetport: 80
-                port: 80  # this will be use if you don't specify nodePort
-                nodeport: 30008  # range 30000 to 32767
+              # Optional. This the port at which the container is listening inside the pod. If not given, equal to port
+              port: 80
+              # Mandatory. this is the port of the service which is mapped to the targetport above
+              nodeport: 30008
+              # Optional. Range 30000 to 32767. Port on the node which is mapped to the service port above
+              # If not given, this will be assigned a random port 30000-32767
+              # This nodePort will be valid on all nodes if the pods span multiple nodes
         selector:
             app: WebApp
-            type: FrintEnd  # both these need to match the metadata of the pods.
+            type: FrontEnd
+            # both these need to match the metadata of the pods.
+            # if multiple pods match this, then the svc acts as frontend to all those pods. The request by deafult
+            # forwarded to one of the pods chosen randomly
 
-If multiple pods match the selector, then the service will loadbalance and send the requests to any one of the group of matched pods randomly. These pods can be anywhere in the cluster across many pods.
+If multiple pods match the selector, then the service will loadbalance and send the requests to any one of the group of
+matched pods randomly. These pods can be anywhere in the cluster across many pods.
 Service uses the below rules to balance load:
 
 Algorithm: Random
@@ -979,12 +1074,12 @@ The service creates a virtual ip inside the cluster
         port:
             - targetport: 8080
               port: 80  # this will be use if you don't specify nodePort
-                
         selector:
             app: WebApp
-            type: FrintEnd  # both these need to match the metadata of the pods.
-This type of service is accesible to other pods either using clusterip of kubernetes at port or simply the service name 'Backend' at port
+            type: FrontEnd  # both these need to match the metadata of the pods.
 
+This type of service is accesible to other pods either using clusterip of kubernetes at port or simply the service
+name 'Backend' at port
 the below command shows that the main kubernetes service 
 
     kubectl describe service kubernetes
@@ -1004,8 +1099,22 @@ is running at port 443 but targetport is 6433
     Endpoints:         172.17.0.48:6443
     Session Affinity:  None
     Events:            <none>
+## port forwarding
 
-## 3) LoadBalancer
+    kubectl port-forward simple-webapp-dep-5f68768c85-tgqs4 4040:8080
+
+4040 is the localhost port and 8080 is the pod port. You can access this pod using localhost:4040
+
+    kubectl port-forward deployment/simple-webapp-dep 4040:8080
+
+4040 is the localhost port and 8080 is the deployment's pod  port. You can access this deployment using localhost:4040
+
+## minkube service svcname
+
+use this command to access the service in the browser
+
+    
+## LoadBalancer
 Balances load across multiple replicas of a pod. Assigns a public ip and a port
 
 ## Ingress 
