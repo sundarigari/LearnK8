@@ -224,7 +224,7 @@ example to create many resourcequota objects
 Kubernetes containers are meant to run a task to completion and exit. Once the task is completed the container exits 
 the cmd statement specified in the dockerfile. 
 In the docker file there are two important items: ENTRYPOINT and CMD
-Entrypoint + cmd tells k8 what command to run to completion along with arguments. 
+Entrypoint + cmd tells docker what command to run to completion along with arguments. 
 
     CMD "ngnix"  
     CMD ["sleep", "5"]
@@ -252,7 +252,7 @@ you can simply run using docker run. The arguments passed to docker run will rep
 You can override the entrypoint using   
 
     docker run --entrypoint sleepv2 ubuntu-sleeper 10
-the new entrypoint will be sleep2 and new CMD will be 10 thus making the docker sleep for 10 sec using sleepv2 
+the new entrypoint will be sleepv2 and new CMD will be 10 thus making the docker sleep for 10 sec using sleepv2 
 
 how to pass command arguments from yaml in kubernetes?  use spec.containers.args: ["arg1", "arg2"]
 
@@ -875,7 +875,7 @@ Rollback:
 
     kubectl rollout undo  deployment/depname
 
-# Jobs  - Run to Completion
+## Jobs  - Run to Completion
 By deafut k8 recreates the container if it exits (ppd: spec.restartPolicy: Always) , in an effort to keep it running continuously.
 
 A ReplicaSet is a set of pods that run continuously
@@ -936,10 +936,10 @@ Pod Backoff failure policy
 There are situations where you want to fail a Job after some amount of retries due to a logical error in configuration etc. To do so, set .spec.backoffLimit to specify the number of retries before considering a Job as failed. The back-off limit is set by default to 6. Failed Pods associated with the Job are recreated by the Job controller with an exponential back-off delay (10s, 20s, 40s …) capped at six minutes. The back-off count is reset if no new failed Pods appear before the Job’s next status check.
 
 
-## Parallel Jobs
+### Parallel Jobs
 There are three main types of task suitable to run as a Job:
 
-## Non-parallel Jobs
+### Non-parallel Jobs
 normally, only one Pod is started, unless the Pod fails.
 the Job is complete as soon as its Pod terminates successfully.
 Parallel Jobs with a fixed completion count:
@@ -948,7 +948,7 @@ the Job represents the overall task, and is complete when there is one successfu
 to .spec.completions.
 not implemented yet: Each Pod is passed a different index in the range 1 to .spec.completions.
 
-## Parallel Jobs with a work queue:
+### Parallel Jobs with a work queue:
 do not specify .spec.completions, default to .spec.parallelism.
 the Pods must coordinate amongst themselves or an external service to determine what each should work on. For example, 
 a Pod might fetch a batch of up to N items from the work queue.
@@ -966,7 +966,7 @@ For a fixed completion count Job, you should set .spec.completions to the number
 
 For a work queue Job, you must leave .spec.completions unset, and set .spec.parallelism to a non-negative integer.
 
-# Cronjobs
+## Cronjobs
 
 Cronjob contains a Job under a jobTemplate, which contains a container under the template
 Cronjob definition (notice jobTemplate and total 3 specs)
@@ -1003,6 +1003,72 @@ schedule format
      │ │ │ │ │
      │ │ │ │ │
      * * * * * command to execute  
+
+## DaemonSets
+### What is daemonset
+
+A DaemonSet ensures that all (or some) Nodes run a copy of a Pod. As nodes are added to the cluster, Pods are added to 
+them. As nodes are removed from the cluster, those Pods are garbage collected. Deleting a DaemonSet will clean up the 
+Pods it created.
+
+Some typical uses of a DaemonSet are:
+
+running a cluster storage daemon, such as glusterd, ceph, bookkeeper on each node.
+running a logs collection daemon on every node, such as fluentd or logstash.
+running a node monitoring daemon on every node, such as Prometheus Node Exporter, Sysdig Agent, collectd, 
+Dynatrace OneAgent, AppDynamics Agent, SignalFx Agent, Datadog agent, New Relic agent, Ganglia gmond or Instana agent.
+
+In a simple case, one DaemonSet, covering all nodes, would be used for each type of daemon. A more complex setup might 
+use multiple DaemonSets for a single type of daemon, but with different flags and/or different memory and cpu requests 
+for different hardware types.
+### Communicating with Daemon Pods
+Some possible patterns for communicating with Pods in a DaemonSet are:
+
+#### Push: Pods in the DaemonSet are configured to send updates to another service, such as a stats database. They do not have clients.
+#### NodeIP and Known Port: Pods in the DaemonSet can use a hostPort, so that the pods are reachable via the node IPs. Clients know the list of node IPs somehow, and know the port by convention.
+#### DNS: Create a headless service with the same pod selector, and then discover DaemonSets using the endpoints resource or retrieve multiple A records from DNS.
+#### Service: Create a service with the same Pod selector, and use the service to reach a daemon on a random node. (No way to reach specific node.
+### Alternatives to DaemonSet
+Init Scripts
+It is certainly possible to run daemon processes by directly starting them on a node (e.g. using init, upstartd, or systemd). This is perfectly fine. However, there are several advantages to running such processes via a DaemonSet:
+
+Ability to monitor and manage logs for daemons in the same way as applications.
+Same config language and tools (e.g. Pod templates, kubectl) for daemons and applications.
+Running daemons in containers with resource limits increases isolation between daemons from app containers. However, this can also be accomplished by running the daemons in a container but not in a Pod (e.g. start directly via Docker).
+Bare Pods
+It is possible to create Pods directly which specify a particular node to run on. However, a DaemonSet replaces Pods that are deleted or terminated for any reason, such as in the case of node failure or disruptive node maintenance, such as a kernel upgrade. For this reason, you should use a DaemonSet rather than creating individual Pods.
+
+Static Pods
+It is possible to create Pods by writing a file to a certain directory watched by Kubelet. These are called static pods. Unlike DaemonSet, static Pods cannot be managed with kubectl or other Kubernetes API clients. Static Pods do not depend on the apiserver, making them useful in cluster bootstrapping cases. Also, static Pods may be deprecated in the future.
+
+Deployments
+DaemonSets are similar to Deployments in that they both create Pods, and those Pods have processes which are not expected to terminate (e.g. web servers, storage servers).
+
+Use a Deployment for stateless services, like frontends, where scaling up and down the number of replicas and rolling out updates are more important than controlling exactly which host the Pod runs on. Use a DaemonSet when it is important that a copy of a Pod always run on all or certain hosts, and when it needs to start before other Pods.
+
+## StatefulSets
+### What is StatefulSet
+StatefulSet is the workload API object used to manage stateful applications.
+Note: StatefulSets are stable (GA) in 1.9.
+Manages the deployment and scaling of a set of Pods, and provides guarantees about the ordering and uniqueness of these 
+Pods. Like a Deployment, a StatefulSet manages Pods that are based on an identical container spec. Unlike a Deployment, 
+a StatefulSet maintains a sticky identity for each of their Pods. These pods are created from the same spec, but are 
+not interchangeable: each has a persistent identifier that it maintains across any rescheduling.
+
+A StatefulSet operates under the same pattern as any other Controller. You define your desired state in a StatefulSet 
+object, and the StatefulSet controller makes any necessary updates to get there from the current state.
+
+### Using StatefulSets
+StatefulSets are valuable for applications that require one or more of the following.
+
+Stable, unique network identifiers.
+Stable, persistent storage.
+Ordered, graceful deployment and scaling.
+Ordered, automated rolling updates.
+In the above, stable is synonymous with persistence across Pod (re)scheduling. If an application doesn’t require any 
+stable identifiers or ordered deployment, deletion, or scaling, you should deploy your application with a controller 
+that provides a set of stateless replicas. Controllers such as Deployment or ReplicaSet may be better suited to your 
+stateless need
 
 # Services and Networking
 
@@ -1132,7 +1198,7 @@ Kubernetes cluster does not come with a builtin ingress controller by default. W
 1) GCP HTTP(S) Load balancer for GCE
 2) ngnix
 are supported and maintained by kubernetes project
-(Others such as istio, haproxy, contour, traegik)
+(Others such as istio, haproxy, contour, traefik)
 
 Create all the a separate namespace such as ingress-space for all the below objects. (kubectl create namespace ingress-space)
 ngnix ingress controller is deployed like any other k8 resurce in the cluster. It consists of:
@@ -1433,3 +1499,4 @@ calim one-to-one volume
             volumeMounts:                            |
             - mountPath: "/var/lib/mysql"            |
               name: mysql-persistent-storage <-------|
+              
