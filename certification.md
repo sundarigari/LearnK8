@@ -3,15 +3,15 @@ This exam curriculum includes these general domains and their weights on the exa
 
 | Weight| Topic                   |
 |-------|-------------------------|
-| 13%   | Core Concepts           |
-| 18%   | Configuration           |
-| 10%   | Multi-Container Pods    |
-| 18%   |  Observability          |
-| 20%   |  Pod Design             |
-| 13%   |  Services & Networking  |
-| 8%    |  State Persistence      |
+| 13%   |  [Core Concepts](#core)           |
+| 18%   |  [Configuration](#config)           |
+| 10%   |  [Multi-Container Pods](#multi)    |
+| 18%   |  [Observability](#obs)          |
+| 20%   |  [Pod Design](#poddesign)             |
+| 13%   |  [Services & Networking](#services)  |
+| 8%    |  [State Persistence](#state)      |
 
-# Core concepts
+# <a name="core">Core concepts</a>
 ## install docker minikube
     docker-machine create --driver hyperv --hyperv-virtual-switch="Primary Virtual Switch" minikube
     minikube start --vm-driver="hyperv" --hyperv-virtual-switch="Primary Virtual Switch"
@@ -219,7 +219,7 @@ example to create many resourcequota objects
             scopeName: PriorityClass
             values: ["low"]
 
-# Configuration
+# <a name="config">Configuration</a>
 ## Docker Containers
 Kubernetes containers are meant to run a task to completion and exit. Once the task is completed the container exits 
 the cmd statement specified in the dockerfile. 
@@ -630,7 +630,7 @@ NotIn Exists etc. to filter based on multiple lables/values
 
 Like tolerations, nodeSelector and  nodeAffinity are applied at pod level as a property of pod spec (not at container level)
 
-# Multi-Container pods (10%)
+# <a name="multi">Multi-Container pods (10%)</a>
 
 patterns of MCPs:
 
@@ -682,7 +682,7 @@ pod3:
     kibana: dashboard for elastic search
 
 
-# Observability
+# <a name="obs">Observability</a>
 ## Readiness Probes
 Pod stages  
 
@@ -763,7 +763,7 @@ to see the metrics. Only one metrics server per k8 cluster
     kubectl top node  
     kubectl top pod  
 
-# Pod Design
+# <a name="poddesign">Pod Design</a>
 ## Labels and Selectors
 labels are used to tag a kubernetes object. Labels are mentioned in the metadat  
 
@@ -1070,7 +1070,7 @@ stable identifiers or ordered deployment, deletion, or scaling, you should deplo
 that provides a set of stateless replicas. Controllers such as Deployment or ReplicaSet may be better suited to your 
 stateless need
 
-# Services and Networking
+# <a name="services">Services and Networking</a>
 
 Services enable a group of pods (with same label) to be accessible as a group and be load balanced and available to 
 another pod or end user. Example: back end pods to be available to front end pods front end pods to be accessible to 
@@ -1419,7 +1419,7 @@ selecting a particular pod, that pod will reject any connections that are not al
 Other pods in the namespace that are not selected by any NetworkPolicy will continue to accept all traffic.
 
 
-# State Persistence
+# <a name="state">State Persistence</a>
 
 ## Volumes
 
