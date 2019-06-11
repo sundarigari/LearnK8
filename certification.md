@@ -1082,7 +1082,7 @@ Create a service yaml template using --dry-run and expose your deployment using:
     kubectl expose deployment -n name-space deployment-name --type=NodePort --port=80 --name=service-name --dry-run -o yaml >myservice.yaml
 
 
-## 1) NodePort: 
+## 2) NodePort: 
 A port on a pod is mapped to the nodeip same port so that the pod can be accessible at nodeip:nodePort
 ![service nodeport](https://imgur.com/488umts.jpg)  
 
@@ -1128,7 +1128,7 @@ Use the following command to get the service
 
     kubectl get services
 
-## 2) ClusterIP
+## 1) ClusterIP
 The service creates a virtual ip inside the cluster
 
  apiVersion: v1
@@ -1165,22 +1165,10 @@ is running at port 443 but targetport is 6433
     Endpoints:         172.17.0.48:6443
     Session Affinity:  None
     Events:            <none>
-## port forwarding
 
-    kubectl port-forward simple-webapp-dep-5f68768c85-tgqs4 4040:8080
-
-4040 is the localhost port and 8080 is the pod port. You can access this pod using localhost:4040
-
-    kubectl port-forward deployment/simple-webapp-dep 4040:8080
-
-4040 is the localhost port and 8080 is the deployment's pod  port. You can access this deployment using localhost:4040
-
-## minkube service svcname
-
-use this command to access the service in the browser
 
     
-## LoadBalancer
+## 3) LoadBalancer
 Balances load across multiple replicas of a pod. Assigns a public ip and a port
 
 ## Ingress 
@@ -1369,55 +1357,70 @@ to see the contents of the Ingress-My-Store ingress, run the describe cmd:
 
     kubectl describe ingress Ingress-My-Store
 
+## port forwarding
+
+    kubectl port-forward simple-webapp-dep-5f68768c85-tgqs4 4040:8080
+
+4040 is the localhost port and 8080 is the pod port. You can access this pod using localhost:4040
+
+    kubectl port-forward deployment/simple-webapp-dep 4040:8080
+
+4040 is the localhost port and 8080 is the deployment's pod  port. You can access this deployment using localhost:4040
+
+## minkube service svcname
+
+use this command to access the service in the browser
+
 ## Network Policies
-A network policy is a specification of how groups of pods are allowed to communicate with each other and other network endpoints.  
-NetworkPolicy resources use labels to select pods and define rules which specify what traffic is allowed to the selected pods.  
+A network policy is a specification of how groups of pods are allowed to communicate with other pods (using namespaces
+or pod labels) and other network endpoints (ip blocks).  
+NetworkPolicy resources use labels to select pods and define rules which specify what traffic is allowed to the selected 
+pods. Both ingress (from list) and egress (to list) are supported.
+
+    apiVersion: networking.k8s.io/v1
+    kind: NetworkPolicy
+    metadata:
+      name: test-network-policy
+      namespace: default
+    spec:
+      podSelector:
+        matchLabels:
+          role: db
+      policyTypes:
+      - Ingress
+      - Egress
+      ingress:
+      - from:
+        - ipBlock:
+            cidr: 172.17.0.0/16
+            except:
+            - 172.17.1.0/24
+        - namespaceSelector:
+            matchLabels:
+              project: myproject
+        - podSelector:
+            matchLabels:
+              role: frontend
+        ports:
+        - protocol: TCP
+          port: 6379
+      egress:
+      - to:
+        - ipBlock:
+            cidr: 10.0.0.0/24
+        ports:
+        - protocol: TCP
+          port: 5978
 
 ## Isolated and Non-isolated Pods
 By default, pods are non-isolated; they accept traffic from any source.
-Pods become isolated by having a NetworkPolicy that selects them. Once there is any NetworkPolicy in a namespace selecting a particular pod, that pod will reject any connections that are not allowed by any NetworkPolicy. (Other pods in the namespace that are not selected by any NetworkPolicy will continue to accept all traffic.)
+Pods become isolated by having a NetworkPolicy that selects them. Once there is any NetworkPolicy in a namespace 
+selecting a particular pod, that pod will reject any connections that are not allowed by any NetworkPolicy.
+Other pods in the namespace that are not selected by any NetworkPolicy will continue to accept all traffic.
 
-The NetworkPolicy Resource
-See the NetworkPolicy for a full definition of the resource.
-
-An example NetworkPolicy might look like this:
-
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: test-network-policy
-  namespace: default
-spec:
-  podSelector:
-    matchLabels:
-      role: db
-  policyTypes:
-  - Ingress
-  - Egress
-  ingress:
-  - from:
-    - ipBlock:
-        cidr: 172.17.0.0/16
-        except:
-        - 172.17.1.0/24
-    - namespaceSelector:
-        matchLabels:
-          project: myproject
-    - podSelector:
-        matchLabels:
-          role: frontend
-    ports:
-    - protocol: TCP
-      port: 6379
-  egress:
-  - to:
-    - ipBlock:
-        cidr: 10.0.0.0/24
-    ports:
-    - protocol: TCP
-      port: 5978
 
 # State Persistence
+
 ## Volumes
 
 Volume can be used to persist the pod's data on a folder inside the node (using hostPath.path: /data, hostPath.type: Directory). Even if the pod is deleted the volume will not be deleted.
@@ -1460,8 +1463,7 @@ On a multi node cluster, the pod will use /data of the node its residing on.
         kubectl get persistentvolume
 
 ## Persistent Volume Claim
-pvc can use matchLabels to match multiple PVs
-calim one-to-one volume
+pvc can use matchLabels to match multiple PVs claim one-to-one volume
 
     apiVersion: v1
     kind: PersistentVolumeClaim
@@ -1475,7 +1477,6 @@ calim one-to-one volume
                 storage: 100Mi
 
 ###  get persistent volumes
-
         kubectl get persistentvolume
 ## use persistent volume claim inside pod
 
@@ -1499,4 +1500,5 @@ calim one-to-one volume
             volumeMounts:                            |
             - mountPath: "/var/lib/mysql"            |
               name: mysql-persistent-storage <-------|
-              
+           
+   
