@@ -1013,7 +1013,7 @@ Pods it created.
 
 Some typical uses of a DaemonSet are:
 
-running a cluster storage daemon, such as glusterd, ceph, bookkeeper on each node.
+running a cluster storage daemon, such as glusterd, ceph, Apache bookkeeper on each node.
 running a logs collection daemon on every node, such as fluentd or logstash.
 running a node monitoring daemon on every node, such as Prometheus Node Exporter, Sysdig Agent, collectd, 
 Dynatrace OneAgent, AppDynamics Agent, SignalFx Agent, Datadog agent, New Relic agent, Ganglia gmond or Instana agent.
