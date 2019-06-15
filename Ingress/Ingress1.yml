@@ -1,0 +1,24 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: example-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+   rules:
+   - host: hello-world.info
+     http:
+       paths:
+       - path: /v2/*
+         backend:
+           serviceName: web2
+           servicePort: 8080
+       - path: /*
+         backend:
+           serviceName: web
+           servicePort: 8080
+       - path: /wp/*
+         backend:
+           serviceName: wordpress
+           servicePort: 80
+

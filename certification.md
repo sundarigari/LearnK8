@@ -1444,7 +1444,7 @@ On a multi node cluster, the pod will use /data of the node its residing on.
             name: log-config
             items:
             - key: log_level
-                path: log_level
+              path: log_level
                 
 ## Persistent Volume
 
@@ -1454,7 +1454,7 @@ On a multi node cluster, the pod will use /data of the node its residing on.
         name: pv-vol1
     spec:
         accessModes: 
-        - ReadWriteMany
+            - ReadWriteMany
         capacity:
             storage: 100Mi
         hostPath:

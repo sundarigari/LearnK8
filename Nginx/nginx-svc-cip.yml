@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginxcip
+
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8080
+    targetPort: 80
+    name: http
+  selector:
+    app: nginx

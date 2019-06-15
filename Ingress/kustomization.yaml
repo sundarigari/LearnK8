@@ -1,0 +1,15 @@
+kubectl run web --image=gcr.io/google-samples/hello-app:1.0 --port=8080
+kubectl expose deployment web --target-port=8080 --type=NodePort
+
+minikube service web --url
+
+kubectl run web2 --image=gcr.io/google-samples/hello-app:2.0 --port=8080
+kubectl expose deployment web2 --target-port=8080 --type=NodePort
+
+
+kubectl apply -f Ingress1.yaml
+
+# add minikube ip (192.168.99.100) hello-world.info to /etc/hosts file
+
+curl hello-world.info
+curl hello-world.info/v2
