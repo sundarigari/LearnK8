@@ -1067,8 +1067,42 @@ Ordered, graceful deployment and scaling.
 Ordered, automated rolling updates.
 In the above, stable is synonymous with persistence across Pod (re)scheduling. If an application doesn’t require any 
 stable identifiers or ordered deployment, deletion, or scaling, you should deploy your application with a controller 
-that provides a set of stateless replicas. Controllers such as Deployment or ReplicaSet may be better suited to your 
-stateless need
+that provides a set of stateless replicas. Controllers such as Deployment or ReplicaSet may be better suited to your stateless need
+
+### Updating StatefulSets
+In Kubernetes 1.7 and later, the StatefulSet controller supports automated updates. The strategy used is determined by the spec.updateStrategy field of the StatefulSet API Object. This feature can be used to upgrade the container images, resource requests and/or limits, labels, and annotations of the Pods in a StatefulSet. There are two valid update strategies, RollingUpdate and OnDelete
+
+#### Rolling Update
+The RollingUpdate update strategy will update all Pods in a StatefulSet, in reverse ordinal order, while respecting the StatefulSet guarantees.
+
+Patch the web StatefulSet to apply the RollingUpdate update strategy.
+
+    kubectl patch statefulset web -p '{"spec":{"updateStrategy":{"type":"RollingUpdate"}}}'
+
+#### Staging an Update
+You can stage an update to a StatefulSet by using the partition parameter of the RollingUpdate update strategy. A staged update will keep all of the Pods in the StatefulSet at the current version while allowing mutations to the StatefulSet’s .spec.template.
+
+Patch the web StatefulSet to add a partition to the updateStrategy field.
+
+    kubectl patch statefulset web -p '{"spec":{"updateStrategy":{"type":"RollingUpdate",rollingUpdate":{"partition":3}}}}'
+Patch the StatefulSet again to change the container’s image.
+
+    kubectl patch statefulset web --type='json' -p='[{"op": "replace", "path": "/spec/template/spec/containers/0/image", "value":"k8s.gcr.io/nginx-slim:0.7"}]'
+
+
+#### Rolling Out a Canary
+You can roll out a canary to test a modification to the spec by specifying the partition field and setting it to <= max cardinal of pod 
+
+
+##### when partition is specified:
+All pods with the ordinal less than the partition specified by the updateStrategy, the spec will be at latest - 1
+All pods with the ordinal greater than or equal to the partition specified by the updateStrategy, the spec will be at latest
+
+##### when partition is NOT specified (default)
+All pods (with the ordinal greater than or equal to the partition specified (default=0) by the updateStrategy), the spec will be at latest
+
+
+
 
 # <a name="services">Services and Networking</a>
 
