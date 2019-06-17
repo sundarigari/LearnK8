@@ -1101,7 +1101,8 @@ All pods with the ordinal greater than or equal to the partition specified by th
 ##### when partition is NOT specified (default)
 All pods (with the ordinal greater than or equal to the partition specified (default=0) by the updateStrategy), the spec will be at latest
 
-
+### Deleting StatefulSets
+StatefulSet supports both Non-Cascading and Cascading deletion. In a Non-Cascading Delete, the StatefulSet’s Pods are not deleted when the StatefulSet is deleted. In a Cascading Delete, both the StatefulSet and its Pods are deleted.
 
 
 # <a name="services">Services and Networking</a>
