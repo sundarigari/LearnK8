@@ -1107,9 +1107,8 @@ StatefulSet supports both Non-Cascading and Cascading deletion. In a Non-Cascadi
 
 # <a name="services">Services and Networking</a>
 
-Services enable a group of pods (with same label) to be accessible as a group and be load balanced and available to 
-another pod or end user. Example: back end pods to be available to front end pods front end pods to be accessible to 
-end users etc. Services enable loose coupling between micro services in our application.
+Services enable a group of pods (with same label) to be accessible as a group and be load balanced and available to another pod or end user. Example: back end pods to be available to front end pods front end pods to be accessible to end users etc. Services enable loose coupling between micro services in our application.
+
 There are three types of services.
 
 Create a service yaml template using --dry-run and expose your deployment using:
