@@ -1,3 +1,0 @@
-kubectl create configmap nginxconfig --from-file=./nginx.conf
-kubectl create configmap railsportalnginxconfig --from-file=../RailsPortal/railsportal.nginx.conf
-kubectl create configmap wordpressnginxconfig --from-file=../WP/wordpress.nginx.conf

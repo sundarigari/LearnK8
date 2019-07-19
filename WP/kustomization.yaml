@@ -1,7 +1,0 @@
-secretGenerator:
-- name: mysql-pass
-  literals:
-  - password=raja123 #kubectl create secret generic mysql-pass --from-literal=password=raja123
-resources:
-    - mysql-deployment.yaml
-    - wordpress-deployment.yaml

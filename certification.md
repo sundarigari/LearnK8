@@ -797,6 +797,18 @@ example
                     app: App1        # <--------  
             spec:  
 
+##  Init Containers
+A Pod can have multiple Containers running apps within it, but it can also have one or more Init Containers, which are run before the app Containers are started.
+
+Init Containers are exactly like regular Containers, except:
+
+They always run to completion.
+Each one must complete successfully before the next one is started.
+If an Init Container fails for a Pod, Kubernetes restarts the Pod repeatedly until the Init Container succeeds. However, if the Pod has a restartPolicy of Never, it is not restarted.
+
+To specify a Container as an Init Container, add the initContainers field on the PodSpec as a JSON array of objects of type Container alongside the app containers array. The status of the init containers is returned in .status.initContainerStatuses field as an array of the container statuses (similar to the .status.containerStatuses field).
+
+
 ## Rollout and Versioning in Deployments
 When you create a deployment it triggers a new rollout which inturn creates a new depl. revision
 Revision1 is created when a new deployment with appimage:v1 is created
@@ -1534,5 +1546,16 @@ pvc can use matchLabels to match multiple PVs claim one-to-one volume
             volumeMounts:                            |
             - mountPath: "/var/lib/mysql"            |
               name: mysql-persistent-storage <-------|
-           
-   
+
+
+# Miscellaneous
+How to access API server via browser or curl
+
+    kubectl proxy --port=8080 &
+    Starting to serve on 127.0.0.1:8080
+
+or
+
+    APISERVER=$(kubectl config view --minify -o jsonpath='{.clusters[0].cluster.server}')
+    TOKEN=$(kubectl get secret $(kubectl get serviceaccount default -o jsonpath='{.secrets[0].name}') -o jsonpath='{.data.token}' | base64 --decode )
+    curl $APISERVER/api --header "Authorization: Bearer $TOKEN" --insecure
