@@ -12,6 +12,9 @@ This exam curriculum includes these general domains and their weights on the exa
 | 8%    |  [State Persistence](#state)      |
 
 # <a name="core">Core concepts</a>
+
+![k8 arch](https://imgur.com/90zKO3y.jpg)  
+
 ## install docker minikube
     docker-machine create --driver hyperv --hyperv-virtual-switch="Primary Virtual Switch" minikube
     minikube start --vm-driver="hyperv" --hyperv-virtual-switch="Primary Virtual Switch"
