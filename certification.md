@@ -1125,6 +1125,9 @@ StatefulSet supports both Non-Cascading and Cascading deletion. In a Non-Cascadi
 
 Services enable a group of pods (with same label) to be accessible as a group and be load balanced and available to another pod or end user. Example: back end pods to be available to front end pods front end pods to be accessible to end users etc. Services enable loose coupling between micro services in our application.
 
+## Port forwarding - Use Port Forwarding to Access Applications in a Cluster
+     kubectl port-forward deployment/my-dep  80:80
+
 There are three types of services.
 
 Create a service yaml template using --dry-run and expose your deployment using:
@@ -1132,7 +1135,7 @@ Create a service yaml template using --dry-run and expose your deployment using:
     kubectl expose deployment -n name-space deployment-name --type=NodePort --port=80 --name=service-name --dry-run -o yaml >myservice.yaml
 
 
-## 2) NodePort: 
+## 1) NodePort: 
 A port on a pod is mapped to the nodeip same port so that the pod can be accessible at nodeip:nodePort
 ![service nodeport](https://imgur.com/488umts.jpg)  
 
@@ -1178,7 +1181,7 @@ Use the following command to get the service
 
     kubectl get services
 
-## 1) ClusterIP
+## 2) ClusterIP
 The service creates a virtual ip inside the cluster
 
  apiVersion: v1
