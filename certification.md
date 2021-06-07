@@ -1130,8 +1130,6 @@ Services enable a group of pods (with same label) to be accessible as a group an
      
 
 you can see the output as below and access your ap at http://127.0.0.1:8000
-    Forwarding from 127.0.0.1:8000 -> 80
-    Forwarding from [::1]:8000 -> 80
 
 There are three types of services.
 
