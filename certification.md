@@ -1126,7 +1126,7 @@ StatefulSet supports both Non-Cascading and Cascading deletion. In a Non-Cascadi
 Services enable a group of pods (with same label) to be accessible as a group and be load balanced and available to another pod or end user. Example: back end pods to be available to front end pods front end pods to be accessible to end users etc. Services enable loose coupling between micro services in our application.
 
 ## Port forwarding - Use Port Forwarding to Access Applications in a Cluster
-     kubectl port-forward deployment/my-dep  80:80
+     kubectl port-forward deployment/my-dep  8000:80
      
 
 you can see the output as below and access your ap at http://127.0.0.1:8000
