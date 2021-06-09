@@ -641,7 +641,8 @@ Use nginx-ingress, provisioned with ServiceType = ClusterIP and HostNetwork = tr
 Run Kubeip on the cluster: Google Cloud Kubernetes Nodes cannot be provisioned with static IP addresses. Fortunately, someone created a Kubernetes service called Kubeip that can work around this. Kubeip is triggered whenever a new Node is added to the cluster. It then assigns any available fixed IP address from a pool to that Node, replacing the existing dynamic IP. This way, all static IP address keep being assigned to the cluster, effectively the services remain available. Again, you may experience some downtime here, but can have higher availability by extending your cluster with multiple Nodes and multiple fixed IP addresses. Use multiple DNS A records and CNAME to get “DNS Load Balancing” which should fix the problem.
 
 Get credentials into ~/.kube/config file used by keubectl:
-    gcloud container clusters get-credentials dcluster --zone us-central1-c --project choptions
+
+    gcloud container clusters get-credentials my-cluster-name --zone us-central1-c --project myprojectname
     
     
 ![GCO GKE Setup](https://i.imgur.com/F4BNyur.jpeg)  
