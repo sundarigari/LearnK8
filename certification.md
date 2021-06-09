@@ -639,7 +639,7 @@ Setup Kubernetes on Google Cloud, using g1-small preemptible nodes. Preemptible 
 Use nginx-ingress, provisioned with ServiceType = ClusterIP and HostNetwork = true. Instead of provisioning an expensive cloud load balancer, each Node itself will act as a public-facing reverse proxy. All you need to do is make sure at least one of the Nodes will have a stable, static public IP address (see next bullet). Create a DNS A record and point it to the node’s IP address. All traffic to the DNS will route to the Node, to the Ingress controller, to the service, to the pod.
 
 Run Kubeip on the cluster: Google Cloud Kubernetes Nodes cannot be provisioned with static IP addresses. Fortunately, someone created a Kubernetes service called Kubeip that can work around this. Kubeip is triggered whenever a new Node is added to the cluster. It then assigns any available fixed IP address from a pool to that Node, replacing the existing dynamic IP. This way, all static IP address keep being assigned to the cluster, effectively the services remain available. Again, you may experience some downtime here, but can have higher availability by extending your cluster with multiple Nodes and multiple fixed IP addresses. Use multiple DNS A records and CNAME to get “DNS Load Balancing” which should fix the problem.
-![service nodeport](https://imgur.com/F4BNyur)  
+![GCO GKE Setup](https://i.imgur.com/F4BNyur.jpeg)  
 # <a name="multi">Multi-Container pods (10%)</a>
 
 patterns of MCPs:
