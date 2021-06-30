@@ -15,6 +15,7 @@ This exam curriculum includes these general domains and their weights on the exa
 
 ![k8 arch](https://imgur.com/90zKO3y.jpg)  
 
+
 ## install docker minikube
     docker-machine create --driver hyperv --hyperv-virtual-switch="Primary Virtual Switch" minikube
     minikube start --vm-driver="hyperv" --hyperv-virtual-switch="Primary Virtual Switch"
@@ -756,7 +757,7 @@ But sometimes the container may not crash but may not be accisible due to a bug 
             initialDelaySeconds: 10  
             periodSeconds: 5  
             failureThresholds: 8 # default is 3  
-
+![Observability - Readiness - Liveness](https://i.imgur.com/9QWQ0FM.png)  
 ## Container logging
     docker logs -f dockername  # shows the logs for the container
     kubectl logs -f podname dockername  # shows the logs for the container dockername in the pod: podname
